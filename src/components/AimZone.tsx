@@ -2,8 +2,9 @@ import {
   forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState,
   type CSSProperties, type ReactNode,
 } from "react";
-import { Crosshair, MousePointer } from "lucide-react";
+import { MousePointer } from "lucide-react";
 import { useSettings } from "../store/settings";
+import CrosshairSvg from "./CrosshairSvg";
 
 /* ============================================================
    AimZone — FPS-style canvas with Pointer Lock + virtual cursor
@@ -37,10 +38,12 @@ export interface AimZoneProps {
   active: boolean;
   /** Show the "click to engage" overlay when active but not locked */
   engageHint?: string;
-  /** Color of the crosshair */
+  /** Color of the crosshair — overrides the user's setting if provided */
   crosshairColor?: string;
   /** Show a small dot at center (target indicator)? */
   showCenterDot?: boolean;
+  /** Size of the crosshair in px (default 28) */
+  crosshairSize?: number;
   /** Called on click at virtual position */
   onShoot?: (x: number, y: number) => void;
   /** Called continuously while moving */
@@ -60,8 +63,9 @@ const AimZone = forwardRef<AimZoneHandle, AimZoneProps>(function AimZone(
     style,
     active,
     engageHint = "Cliquez pour activer le viseur",
-    crosshairColor = "#1ed760",
+    crosshairColor,
     showCenterDot = false,
+    crosshairSize = 28,
     onShoot,
     onMove,
     onMouseDown,
@@ -72,6 +76,9 @@ const AimZone = forwardRef<AimZoneHandle, AimZoneProps>(function AimZone(
   ref
 ) {
   const sensitivity = useSettings((s) => s.aimSensitivity);
+  const userShape   = useSettings((s) => s.crosshairShape);
+  const userColor   = useSettings((s) => s.crosshairColor);
+  const effectiveColor = crosshairColor ?? userColor;
   const canvasRef = useRef<HTMLDivElement>(null);
   const [locked, setLocked] = useState(false);
   const cursorRef = useRef({ x: 0, y: 0 });
@@ -210,7 +217,7 @@ const AimZone = forwardRef<AimZoneHandle, AimZoneProps>(function AimZone(
         <div
           className="absolute pointer-events-none w-1 h-1 rounded-full"
           style={{
-            background: crosshairColor,
+            background: effectiveColor,
             opacity: 0.4,
             left: "50%", top: "50%",
             transform: "translate(-50%, -50%)",
@@ -220,17 +227,15 @@ const AimZone = forwardRef<AimZoneHandle, AimZoneProps>(function AimZone(
 
       {/* Virtual crosshair (drawn while locked) */}
       {locked && (
-        <Crosshair
+        <div
           className="absolute pointer-events-none will-change-transform"
           style={{
-            color: crosshairColor,
-            width: 28, height: 28,
             left: cur.x, top: cur.y,
             transform: "translate(-50%, -50%)",
-            filter: "drop-shadow(0 0 4px rgba(0,0,0,0.6))",
           }}
-          strokeWidth={2.5}
-        />
+        >
+          <CrosshairSvg shape={userShape} color={effectiveColor} size={crosshairSize} />
+        </div>
       )}
 
       {/* Engage overlay when active but not locked */}

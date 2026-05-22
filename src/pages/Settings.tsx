@@ -1,16 +1,25 @@
-import { Settings as SettingsIcon, Languages, Keyboard, Crosshair, RotateCcw } from "lucide-react";
+import { Settings as SettingsIcon, Languages, Keyboard, Crosshair, RotateCcw, Palette, Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useSettings, type Language, type KeyboardLayout, AIM_SENS_MIN, AIM_SENS_MAX, AIM_SENS_DEFAULT } from "../store/settings";
+import {
+  useSettings, type Language, type KeyboardLayout, type CrosshairShape,
+  AIM_SENS_MIN, AIM_SENS_MAX, AIM_SENS_DEFAULT,
+  CROSSHAIR_SHAPES, CROSSHAIR_COLOR_PRESETS,
+} from "../store/settings";
 import PageHeader from "../components/PageHeader";
+import CrosshairSvg from "../components/CrosshairSvg";
 
 export default function Settings() {
   const { t } = useTranslation();
   const language = useSettings((s) => s.language);
   const keyboard = useSettings((s) => s.keyboard);
   const aimSens = useSettings((s) => s.aimSensitivity);
+  const crosshairShape = useSettings((s) => s.crosshairShape);
+  const crosshairColor = useSettings((s) => s.crosshairColor);
   const setLanguage = useSettings((s) => s.setLanguage);
   const setKeyboard = useSettings((s) => s.setKeyboard);
   const setAimSensitivity = useSettings((s) => s.setAimSensitivity);
+  const setCrosshairShape = useSettings((s) => s.setCrosshairShape);
+  const setCrosshairColor = useSettings((s) => s.setCrosshairColor);
 
   const langs: Language[] = ["fr", "en"];
   const kbs: KeyboardLayout[] = ["qwerty", "qwertz", "azerty"];
@@ -105,6 +114,92 @@ export default function Settings() {
             </p>
           </div>
         </Section>
+
+        <Section icon={Crosshair} title="Crosshair (forme)">
+          <div className="bg-[#181818] rounded-lg p-5">
+            <div className="grid grid-cols-3 md:grid-cols-7 gap-2 mb-4">
+              {CROSSHAIR_SHAPES.map((s) => (
+                <ShapeChoice
+                  key={s}
+                  shape={s}
+                  color={crosshairColor}
+                  active={crosshairShape === s}
+                  onSelect={() => setCrosshairShape(s)}
+                />
+              ))}
+            </div>
+            <p className="text-xs text-[#b3b3b3]">
+              Forme du viseur affichée pendant les aim trainers.
+            </p>
+          </div>
+        </Section>
+
+        <Section icon={Palette} title="Crosshair (couleur)">
+          <div className="bg-[#181818] rounded-lg p-5">
+            {/* Preset swatches */}
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-2 mb-4">
+              {CROSSHAIR_COLOR_PRESETS.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setCrosshairColor(p.hex)}
+                  title={p.label}
+                  className={`relative aspect-square rounded-lg transition-all ${
+                    crosshairColor.toLowerCase() === p.hex.toLowerCase()
+                      ? "ring-2 ring-white scale-105"
+                      : "hover:scale-105 hover:ring-2 hover:ring-white/40"
+                  }`}
+                  style={{ background: p.hex }}
+                >
+                  {crosshairColor.toLowerCase() === p.hex.toLowerCase() && (
+                    <Check className="absolute inset-0 m-auto w-5 h-5 text-black drop-shadow-[0_1px_2px_rgba(255,255,255,0.8)]" strokeWidth={3} />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Custom hex picker */}
+            <div className="flex items-center gap-3 pt-4 border-t border-white/[0.06]">
+              <span className="text-[11px] uppercase font-bold text-[#b3b3b3]" style={{ letterSpacing: "1.4px" }}>
+                Couleur personnalisée
+              </span>
+              <input
+                type="color"
+                value={crosshairColor}
+                onChange={(e) => setCrosshairColor(e.target.value)}
+                className="w-12 h-9 rounded cursor-pointer bg-transparent border border-[#3a3a3a]"
+              />
+              <input
+                type="text"
+                value={crosshairColor}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  if (/^#[0-9a-fA-F]{6}$/.test(v)) setCrosshairColor(v);
+                }}
+                placeholder="#1ed760"
+                className="w-28 px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-mono uppercase outline-none"
+              />
+            </div>
+          </div>
+        </Section>
+
+        {/* Live preview */}
+        <Section icon={Crosshair} title="Aperçu">
+          <div className="bg-[#0a0a0a] rounded-lg h-40 flex items-center justify-center relative overflow-hidden">
+            {/* Grid pattern background for context */}
+            <div
+              className="absolute inset-0 opacity-30"
+              style={{
+                backgroundImage: "linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)",
+                backgroundSize: "20px 20px",
+              }}
+            />
+            <CrosshairSvg shape={crosshairShape} color={crosshairColor} size={56} />
+          </div>
+          <p className="text-xs text-[#b3b3b3] mt-2 text-center">
+            Aperçu du crosshair utilisé dans les aim trainers
+          </p>
+        </Section>
       </div>
     </>
   );
@@ -118,5 +213,27 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
       </h2>
       {children}
     </div>
+  );
+}
+
+function ShapeChoice({ shape, color, active, onSelect }: {
+  shape: CrosshairShape; color: string; active: boolean; onSelect: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={`relative aspect-square rounded-lg flex items-center justify-center transition-all ${
+        active
+          ? "bg-[#0a0a0a] ring-2 ring-[#1ed760]"
+          : "bg-[#0a0a0a] hover:ring-2 hover:ring-white/40"
+      }`}
+      title={shape}
+    >
+      <CrosshairSvg shape={shape} color={color} size={32} shadow={false} />
+      <span className={`absolute bottom-1 text-[9px] uppercase tracking-[1.4px] font-bold ${active ? "text-[#1ed760]" : "text-[#b3b3b3]"}`}>
+        {shape}
+      </span>
+    </button>
   );
 }
