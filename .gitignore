@@ -40,3 +40,6 @@ Desktop.ini
 
 # Claude / agent metadata
 .claude/
+
+# Release staging (artifacts uploaded to GitHub Releases)
+release-stage/
