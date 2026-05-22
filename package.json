@@ -2,6 +2,17 @@
   "name": "gaming-config-trainer",
   "private": true,
   "version": "0.1.0",
+  "description": "Gaming setup optimizer + aim trainers + speed test for Valorant, Fortnite & League of Legends.",
+  "license": "MIT",
+  "author": "Louisdelez",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Louisdelez/gaming-config-trainer.git"
+  },
+  "homepage": "https://github.com/Louisdelez/gaming-config-trainer#readme",
+  "bugs": {
+    "url": "https://github.com/Louisdelez/gaming-config-trainer/issues"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
