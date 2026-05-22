@@ -126,6 +126,44 @@ export async function dbDeleteAllScores() {
   await db.execute("DELETE FROM scores");
 }
 
+/* ---------- CAPTURES ---------- */
+export interface DbCaptureRow {
+  id: number;
+  kind: string;
+  path: string;
+  size_bytes: number | null;
+  encoder: string | null;
+  duration_sec: number | null;
+  created_at: number;
+}
+
+export async function dbListCaptures(limit = 50): Promise<DbCaptureRow[]> {
+  const db = await getDb();
+  return db.select<DbCaptureRow[]>(
+    "SELECT * FROM captures ORDER BY created_at DESC LIMIT $1",
+    [limit]
+  );
+}
+
+export async function dbInsertCapture(c: {
+  kind: string;
+  path: string;
+  size_bytes?: number | null;
+  encoder?: string | null;
+  duration_sec?: number | null;
+}) {
+  const db = await getDb();
+  await db.execute(
+    "INSERT INTO captures (kind, path, size_bytes, encoder, duration_sec, created_at) VALUES ($1, $2, $3, $4, $5, $6)",
+    [c.kind, c.path, c.size_bytes ?? null, c.encoder ?? null, c.duration_sec ?? null, Date.now()]
+  );
+}
+
+export async function dbDeleteCapture(id: number) {
+  const db = await getDb();
+  await db.execute("DELETE FROM captures WHERE id = $1", [id]);
+}
+
 /* ---------- SETTINGS (key/value) ---------- */
 export async function dbGetSetting(key: string): Promise<string | null> {
   const db = await getDb();

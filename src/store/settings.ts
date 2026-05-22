@@ -39,6 +39,14 @@ interface SettingsState {
   aimSensitivity: number;
   crosshairShape: CrosshairShape;
   crosshairColor: string;
+  /** Default folder for screenshots / recordings (empty = ask each time via dialog) */
+  captureFolder: string;
+  /** Capture system audio with recordings? */
+  captureAudio: boolean;
+  /** Replay buffer enabled? (background record for last-N-sec save) */
+  replayEnabled: boolean;
+  /** Replay buffer length in seconds (10–120) */
+  replaySeconds: number;
   loaded: boolean;
   hydrate: () => Promise<void>;
   setLanguage: (lang: Language) => Promise<void>;
@@ -46,6 +54,10 @@ interface SettingsState {
   setAimSensitivity: (v: number) => Promise<void>;
   setCrosshairShape: (s: CrosshairShape) => Promise<void>;
   setCrosshairColor: (hex: string) => Promise<void>;
+  setCaptureFolder: (path: string) => Promise<void>;
+  setCaptureAudio: (on: boolean) => Promise<void>;
+  setReplayEnabled: (on: boolean) => Promise<void>;
+  setReplaySeconds: (n: number) => Promise<void>;
 }
 
 function clampSens(v: number): number {
@@ -67,6 +79,10 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   aimSensitivity: AIM_SENS_DEFAULT,
   crosshairShape: CROSSHAIR_DEFAULT_SHAPE,
   crosshairColor: CROSSHAIR_DEFAULT_COLOR,
+  captureFolder: "",
+  captureAudio: false,
+  replayEnabled: false,
+  replaySeconds: 30,
   loaded: false,
 
   hydrate: async () => {
@@ -85,6 +101,13 @@ export const useSettings = create<SettingsState>()((set, get) => ({
       }
       if (all.crosshairColor && isHex(all.crosshairColor)) {
         updates.crosshairColor = all.crosshairColor;
+      }
+      if (typeof all.captureFolder === "string") updates.captureFolder = all.captureFolder;
+      if (all.captureAudio === "true") updates.captureAudio = true;
+      if (all.replayEnabled === "true") updates.replayEnabled = true;
+      if (all.replaySeconds) {
+        const n = parseInt(all.replaySeconds, 10);
+        if (Number.isFinite(n) && n >= 10 && n <= 120) updates.replaySeconds = n;
       }
       set(updates);
     } catch (e) {
@@ -123,5 +146,30 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     set({ crosshairColor: hex });
     try { await dbSetSetting("crosshairColor", hex); }
     catch (e) { console.error("[settings] setCrosshairColor failed:", e); }
+  },
+
+  setCaptureFolder: async (path) => {
+    set({ captureFolder: path });
+    try { await dbSetSetting("captureFolder", path); }
+    catch (e) { console.error("[settings] setCaptureFolder failed:", e); }
+  },
+
+  setCaptureAudio: async (on) => {
+    set({ captureAudio: on });
+    try { await dbSetSetting("captureAudio", on ? "true" : "false"); }
+    catch (e) { console.error("[settings] setCaptureAudio failed:", e); }
+  },
+
+  setReplayEnabled: async (on) => {
+    set({ replayEnabled: on });
+    try { await dbSetSetting("replayEnabled", on ? "true" : "false"); }
+    catch (e) { console.error("[settings] setReplayEnabled failed:", e); }
+  },
+
+  setReplaySeconds: async (n) => {
+    const clamped = Math.max(10, Math.min(120, Math.floor(n)));
+    set({ replaySeconds: clamped });
+    try { await dbSetSetting("replaySeconds", String(clamped)); }
+    catch (e) { console.error("[settings] setReplaySeconds failed:", e); }
   },
 }));

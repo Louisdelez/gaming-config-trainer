@@ -1,21 +1,27 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   Camera, Video, Square, Loader2, Check, AlertCircle, Folder, Cpu, Gauge, Film,
+  Keyboard, Trash2, Rewind, Mic, MicOff,
 } from "lucide-react";
 import { openPath } from "@tauri-apps/plugin-opener";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import PageHeader from "../components/PageHeader";
+import { useSettings } from "../store/settings";
 import {
-  captureScreenshot, startRecording, detectEncoders,
-  type EncoderId, type RecordingHandle,
+  captureScreenshot, startRecording, startReplayBuffer, detectEncoders,
+  type EncoderId, type RecordingHandle, type ReplayBufferHandle,
 } from "../lib/capture";
+import {
+  registerCaptureHotkeys, unregisterCaptureHotkeys,
+  HOTKEY_SCREENSHOT, HOTKEY_RECORD, HOTKEY_REPLAY,
+} from "../lib/hotkeys";
+import { dbListCaptures, dbDeleteCapture, type DbCaptureRow } from "../lib/db";
 
 type Status =
   | { kind: "idle" }
   | { kind: "busy"; msg: string }
   | { kind: "ok"; msg: string; path?: string }
   | { kind: "err"; msg: string };
-
-interface SavedFile { kind: "screenshot" | "recording"; path: string; at: number; }
 
 const ENCODER_LABEL: Record<EncoderId, string> = {
   h264_nvenc: "NVIDIA NVENC (GPU)",
@@ -26,32 +32,47 @@ const ENCODER_LABEL: Record<EncoderId, string> = {
 };
 
 const FPS_OPTIONS = [30, 60, 120, 144];
-const BITRATE_OPTIONS = [4000, 8000, 12000, 20000, 30000]; // kbps
+const BITRATE_OPTIONS = [4000, 8000, 12000, 20000, 30000];
 
 export default function Capture() {
+  const captureFolder = useSettings((s) => s.captureFolder);
+  const captureAudio  = useSettings((s) => s.captureAudio);
+  const replayEnabled = useSettings((s) => s.replayEnabled);
+  const replaySeconds = useSettings((s) => s.replaySeconds);
+  const setCaptureFolder = useSettings((s) => s.setCaptureFolder);
+  const setCaptureAudio  = useSettings((s) => s.setCaptureAudio);
+  const setReplayEnabled = useSettings((s) => s.setReplayEnabled);
+  const setReplaySeconds = useSettings((s) => s.setReplaySeconds);
+
   const [status, setStatus] = useState<Status>({ kind: "idle" });
   const [available, setAvailable] = useState<EncoderId[]>([]);
   const [encoder, setEncoder] = useState<EncoderId>("h264_mf");
   const [fps, setFps] = useState(60);
   const [bitrate, setBitrate] = useState(12000);
-  const [recent, setRecent] = useState<SavedFile[]>([]);
-  const handleRef = useRef<RecordingHandle | null>(null);
+  const [history, setHistory] = useState<DbCaptureRow[]>([]);
+  const recordRef = useRef<RecordingHandle | null>(null);
+  const replayRef = useRef<ReplayBufferHandle | null>(null);
   const [recording, setRecording] = useState(false);
+  const [replayActive, setReplayActive] = useState(false);
   const [elapsed, setElapsed] = useState(0);
   const elapsedTimer = useRef<number | null>(null);
+  const refreshHistory = useCallback(async () => {
+    try { setHistory(await dbListCaptures(50)); }
+    catch (e) { console.error(e); }
+  }, []);
 
   // Detect encoders on mount
   useEffect(() => {
     detectEncoders().then((list) => {
       setAvailable(list);
-      // Pick the best available: NVENC > QSV > AMF > MF > libx264
       const pref: EncoderId[] = ["h264_nvenc", "h264_qsv", "h264_amf", "h264_mf", "libx264"];
       const best = pref.find((p) => list.includes(p));
       if (best) setEncoder(best);
     });
-  }, []);
+    refreshHistory();
+  }, [refreshHistory]);
 
-  // Elapsed timer while recording
+  // Elapsed timer
   useEffect(() => {
     if (!recording) {
       if (elapsedTimer.current) { clearInterval(elapsedTimer.current); elapsedTimer.current = null; }
@@ -67,7 +88,7 @@ export default function Capture() {
     };
   }, [recording]);
 
-  // Auto-clear status after 4s
+  // Auto-clear toast
   useEffect(() => {
     if (status.kind === "ok" || status.kind === "err") {
       const t = setTimeout(() => setStatus({ kind: "idle" }), 4000);
@@ -75,56 +96,129 @@ export default function Capture() {
     }
   }, [status]);
 
-  const handleScreenshot = async () => {
+  const detail = (e: any) => typeof e === "string" ? e : (e?.message || JSON.stringify(e).slice(0, 200));
+
+  const handleScreenshot = useCallback(async () => {
     setStatus({ kind: "busy", msg: "Capture de l'écran…" });
     try {
-      const path = await captureScreenshot();
+      const path = await captureScreenshot(captureFolder || undefined);
       if (!path) { setStatus({ kind: "idle" }); return; }
-      const entry: SavedFile = { kind: "screenshot", path, at: Date.now() };
-      setRecent((r) => [entry, ...r].slice(0, 10));
+      refreshHistory();
       setStatus({ kind: "ok", msg: "Screenshot enregistré", path });
     } catch (e: any) {
-      console.error(e);
-      setStatus({ kind: "err", msg: e?.message ?? "Erreur capture" });
+      console.error("[capture] screenshot failed:", e);
+      setStatus({ kind: "err", msg: `Erreur capture: ${detail(e)}` });
     }
-  };
+  }, [captureFolder, refreshHistory]);
 
-  const handleStartRecording = async () => {
+  const handleStartRecording = useCallback(async () => {
     setStatus({ kind: "busy", msg: "Démarrage enregistrement…" });
     try {
-      const handle = await startRecording({ encoder, fps, bitrateKbps: bitrate });
+      const handle = await startRecording({
+        encoder, fps, bitrateKbps: bitrate,
+        audio: captureAudio,
+        defaultFolder: captureFolder || undefined,
+      });
       if (!handle) { setStatus({ kind: "idle" }); return; }
-      handleRef.current = handle;
+      recordRef.current = handle;
       setRecording(true);
       setStatus({ kind: "ok", msg: "Enregistrement en cours…" });
     } catch (e: any) {
-      console.error(e);
-      setStatus({ kind: "err", msg: e?.message ?? "Erreur démarrage" });
+      console.error("[capture] startRecording failed:", e);
+      setStatus({ kind: "err", msg: `Erreur démarrage: ${detail(e)}` });
     }
-  };
+  }, [encoder, fps, bitrate, captureAudio, captureFolder]);
 
-  const handleStopRecording = async () => {
-    const handle = handleRef.current;
+  const handleStopRecording = useCallback(async () => {
+    const handle = recordRef.current;
     if (!handle) return;
-    setStatus({ kind: "busy", msg: "Finalisation du fichier MP4…" });
+    setStatus({ kind: "busy", msg: "Finalisation du MP4…" });
     setRecording(false);
     try {
-      await handle.stop();
-      handleRef.current = null;
-      const entry: SavedFile = { kind: "recording", path: handle.path, at: Date.now() };
-      setRecent((r) => [entry, ...r].slice(0, 10));
-      setStatus({ kind: "ok", msg: "Vidéo enregistrée", path: handle.path });
+      const result = await handle.stop();
+      recordRef.current = null;
+      refreshHistory();
+      setStatus({ kind: "ok", msg: `Vidéo enregistrée (${result.durationSec}s)`, path: result.path });
     } catch (e: any) {
-      console.error(e);
-      setStatus({ kind: "err", msg: e?.message ?? "Erreur stop" });
+      console.error("[capture] stop failed:", e);
+      setStatus({ kind: "err", msg: `Erreur stop: ${detail(e)}` });
     }
-  };
+  }, [refreshHistory]);
 
-  const openFolder = async (path: string) => {
+  const toggleRecord = useCallback(() => {
+    if (recordRef.current) handleStopRecording();
+    else handleStartRecording();
+  }, [handleStartRecording, handleStopRecording]);
+
+  /* ---------- Replay buffer ---------- */
+  const startReplay = useCallback(async () => {
+    setStatus({ kind: "busy", msg: "Démarrage buffer replay…" });
     try {
-      const dir = path.replace(/[\\/][^\\/]+$/, "");
-      await openPath(dir);
-    } catch (e) { console.error(e); }
+      const h = await startReplayBuffer({
+        encoder, fps, bitrateKbps: bitrate,
+        audio: captureAudio, seconds: replaySeconds,
+        defaultFolder: captureFolder || undefined,
+      });
+      replayRef.current = h;
+      setReplayActive(true);
+      setStatus({ kind: "ok", msg: `Replay buffer actif (${replaySeconds}s)` });
+    } catch (e: any) {
+      console.error("[replay] start failed:", e);
+      setStatus({ kind: "err", msg: `Erreur replay: ${detail(e)}` });
+    }
+  }, [encoder, fps, bitrate, captureAudio, replaySeconds, captureFolder]);
+
+  const stopReplay = useCallback(async () => {
+    const h = replayRef.current;
+    if (!h) return;
+    try { await h.stop(); } catch (e) { console.error(e); }
+    replayRef.current = null;
+    setReplayActive(false);
+    setStatus({ kind: "ok", msg: "Replay buffer arrêté" });
+  }, []);
+
+  const saveReplay = useCallback(async () => {
+    const h = replayRef.current;
+    if (!h) {
+      setStatus({ kind: "err", msg: "Buffer replay non actif" });
+      return;
+    }
+    setStatus({ kind: "busy", msg: "Sauvegarde clip replay…" });
+    try {
+      const outPath = await h.saveClip();
+      if (!outPath) { setStatus({ kind: "idle" }); return; }
+      refreshHistory();
+      setStatus({ kind: "ok", msg: `Clip de ${h.seconds}s sauvegardé`, path: outPath });
+    } catch (e: any) {
+      console.error("[replay] save failed:", e);
+      setStatus({ kind: "err", msg: `Erreur save replay: ${detail(e)}` });
+    }
+  }, [refreshHistory]);
+
+  /* ---------- Hotkeys ---------- */
+  useEffect(() => {
+    registerCaptureHotkeys({
+      onScreenshot: handleScreenshot,
+      onRecordToggle: toggleRecord,
+      onReplay: saveReplay,
+    });
+    return () => { unregisterCaptureHotkeys(); };
+  }, [handleScreenshot, toggleRecord, saveReplay]);
+
+  /* ---------- Persist replayEnabled change ---------- */
+  useEffect(() => {
+    if (replayEnabled && !replayActive && !replayRef.current) {
+      startReplay();
+    } else if (!replayEnabled && replayActive) {
+      stopReplay();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [replayEnabled]);
+
+  /* ---------- Folder picker ---------- */
+  const pickFolder = async () => {
+    const dir = await openDialog({ directory: true, multiple: false });
+    if (typeof dir === "string") setCaptureFolder(dir);
   };
 
   return (
@@ -132,80 +226,65 @@ export default function Capture() {
       <PageHeader
         icon={Video}
         title="Capture"
-        subtitle="Screenshots et enregistrement vidéo via FFmpeg (gdigrab + hardware encoder)"
+        subtitle="Screenshots, recording et replay buffer via FFmpeg (gdigrab + hardware encoder)"
       />
 
-      {/* ACTION BUTTONS */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+      {/* ACTION CARDS */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         {/* Screenshot */}
-        <div className="bg-[#181818] rounded-xl p-6 flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-[#1ed760] flex items-center justify-center">
-              <Camera className="w-6 h-6 text-black" strokeWidth={2.5} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3]">Screenshot</div>
-              <div className="text-lg font-extrabold text-white">Capture d'écran</div>
-            </div>
-          </div>
-          <p className="text-xs text-[#b3b3b3] flex-1">
-            Capture l'écran entier en PNG, qualité max. Le dialogue Windows te demande où enregistrer.
-          </p>
-          <button
-            onClick={handleScreenshot}
-            disabled={status.kind === "busy" || recording}
-            className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#1ed760] hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed text-black text-[11px] font-bold uppercase transition-transform"
-            style={{ letterSpacing: "1.4px" }}
-          >
-            <Camera className="w-4 h-4" />
-            Prendre un screenshot
-          </button>
-        </div>
+        <ActionCard
+          icon={Camera}
+          title="Screenshot"
+          subtitle={`Hotkey ${HOTKEY_SCREENSHOT}`}
+          desc="PNG plein écran, qualité max."
+          buttonLabel="Capturer"
+          onClick={handleScreenshot}
+          disabled={status.kind === "busy"}
+        />
 
         {/* Recording */}
-        <div className={`rounded-xl p-6 flex flex-col gap-4 ${recording ? "bg-[#2a0e10] ring-1 ring-[#f3727f]" : "bg-[#181818]"}`}>
-          <div className="flex items-center gap-3">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center ${recording ? "bg-[#f3727f] animate-pulse" : "bg-[#1ed760]"}`}>
-              <Video className="w-6 h-6 text-black" strokeWidth={2.5} />
-            </div>
-            <div className="flex-1">
-              <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3]">Recording</div>
-              <div className="text-lg font-extrabold text-white">Enregistrement vidéo</div>
-            </div>
-            {recording && (
-              <div className="text-right">
-                <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#f3727f]">REC</div>
-                <div className="font-mono font-bold text-xl text-white">{formatElapsed(elapsed)}</div>
-              </div>
-            )}
+        <ActionCard
+          icon={Video}
+          title="Enregistrement"
+          subtitle={`Hotkey ${HOTKEY_RECORD}`}
+          desc={recording
+            ? `🔴 REC • ${formatElapsed(elapsed)} • ${ENCODER_LABEL[encoder]}`
+            : `${ENCODER_LABEL[encoder]} • ${fps} FPS • ${bitrate / 1000} Mbps`}
+          buttonLabel={recording ? "Arrêter" : "Démarrer"}
+          onClick={recording ? handleStopRecording : handleStartRecording}
+          danger={recording}
+          disabled={status.kind === "busy"}
+        />
+
+        {/* Replay buffer */}
+        <ActionCard
+          icon={Rewind}
+          title="Replay buffer"
+          subtitle={`Hotkey ${HOTKEY_REPLAY}`}
+          desc={replayActive
+            ? `🟢 Actif (last ${replaySeconds}s) • Appuie ${HOTKEY_REPLAY} pour sauver`
+            : `Style ShadowPlay • garde les ${replaySeconds}s dernières`}
+          buttonLabel={replayActive ? "Sauver clip" : "Activer"}
+          onClick={replayActive ? saveReplay : () => setReplayEnabled(true)}
+          active={replayActive}
+          disabled={status.kind === "busy"}
+        />
+      </div>
+
+      {/* HOTKEYS INFO BANNER */}
+      <div className="bg-[#0e2a18] border border-[#1ed760] rounded-xl p-4 mb-6 flex items-start gap-3">
+        <Keyboard className="w-5 h-5 text-[#1ed760] shrink-0 mt-0.5" />
+        <div className="text-xs">
+          <div className="text-[#1ed760] font-bold mb-1">Hotkeys globaux actifs même quand le jeu a le focus</div>
+          <div className="text-white space-x-3">
+            <Kbd>{HOTKEY_SCREENSHOT}</Kbd> Screenshot
+            <Kbd>{HOTKEY_RECORD}</Kbd> Start/Stop record
+            <Kbd>{HOTKEY_REPLAY}</Kbd> Save replay
           </div>
-          <p className="text-xs text-[#b3b3b3] flex-1">
-            Enregistre l'écran en MP4 avec hardware encoding ({ENCODER_LABEL[encoder]}) à {fps} FPS / {bitrate / 1000} Mbps.
-          </p>
-          {!recording ? (
-            <button
-              onClick={handleStartRecording}
-              disabled={status.kind === "busy"}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#1ed760] hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed text-black text-[11px] font-bold uppercase transition-transform"
-              style={{ letterSpacing: "1.4px" }}
-            >
-              <Video className="w-4 h-4" />
-              Démarrer l'enregistrement
-            </button>
-          ) : (
-            <button
-              onClick={handleStopRecording}
-              className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-full bg-[#f3727f] hover:scale-105 text-black text-[11px] font-bold uppercase transition-transform"
-              style={{ letterSpacing: "1.4px" }}
-            >
-              <Square className="w-4 h-4 fill-current" />
-              Arrêter l'enregistrement
-            </button>
-          )}
         </div>
       </div>
 
-      {/* ENCODER + QUALITY SETTINGS */}
+      {/* VIDEO SETTINGS */}
       <h2 className="text-[11px] uppercase font-bold text-[#b3b3b3] mb-3" style={{ letterSpacing: "1.4px" }}>
         Paramètres vidéo
       </h2>
@@ -214,7 +293,7 @@ export default function Capture() {
           <select
             value={encoder}
             onChange={(e) => setEncoder(e.target.value as EncoderId)}
-            disabled={recording}
+            disabled={recording || replayActive}
             className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none disabled:opacity-50"
           >
             {(["h264_nvenc","h264_amf","h264_qsv","h264_mf","libx264"] as EncoderId[]).map((id) => (
@@ -229,12 +308,10 @@ export default function Capture() {
           <select
             value={fps}
             onChange={(e) => setFps(parseInt(e.target.value, 10))}
-            disabled={recording}
+            disabled={recording || replayActive}
             className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none disabled:opacity-50"
           >
-            {FPS_OPTIONS.map((v) => (
-              <option key={v} value={v}>{v} fps</option>
-            ))}
+            {FPS_OPTIONS.map((v) => <option key={v} value={v}>{v} fps</option>)}
           </select>
         </Field>
 
@@ -242,43 +319,122 @@ export default function Capture() {
           <select
             value={bitrate}
             onChange={(e) => setBitrate(parseInt(e.target.value, 10))}
-            disabled={recording}
+            disabled={recording || replayActive}
             className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none disabled:opacity-50"
           >
-            {BITRATE_OPTIONS.map((v) => (
-              <option key={v} value={v}>{(v / 1000).toFixed(0)} Mbps</option>
-            ))}
+            {BITRATE_OPTIONS.map((v) => <option key={v} value={v}>{(v / 1000).toFixed(0)} Mbps</option>)}
           </select>
         </Field>
       </div>
 
-      {/* RECENT FILES */}
+      {/* OUTPUT FOLDER + AUDIO + REPLAY DURATION */}
       <h2 className="text-[11px] uppercase font-bold text-[#b3b3b3] mb-3" style={{ letterSpacing: "1.4px" }}>
-        Cette session ({recent.length})
+        Préférences
+      </h2>
+      <div className="bg-[#181818] rounded-xl p-5 mb-6 space-y-4">
+        <div>
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3] mb-1.5">
+            <Folder className="w-3 h-3" /> Dossier de sortie
+          </div>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={captureFolder}
+              onChange={(e) => setCaptureFolder(e.target.value)}
+              placeholder="(vide = demander à chaque fois)"
+              className="flex-1 px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-mono outline-none"
+            />
+            <button onClick={pickFolder} className="px-4 py-2 rounded bg-[#1ed760] hover:scale-105 text-black text-[11px] font-bold uppercase transition-transform" style={{ letterSpacing: "1.4px" }}>
+              Parcourir
+            </button>
+            {captureFolder && (
+              <button onClick={() => setCaptureFolder("")} className="px-4 py-2 rounded bg-[#1f1f1f] hover:bg-[#252525] text-white text-[11px] font-bold uppercase transition-colors" style={{ letterSpacing: "1.4px" }}>
+                Effacer
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 pt-3 border-t border-white/[0.06]">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={captureAudio}
+              onChange={(e) => setCaptureAudio(e.target.checked)}
+              className="accent-[#1ed760] w-4 h-4"
+            />
+            {captureAudio ? <Mic className="w-4 h-4 text-[#1ed760]" /> : <MicOff className="w-4 h-4 text-[#b3b3b3]" />}
+            <span className="text-sm font-bold text-white">Capturer audio système</span>
+          </label>
+          <span className="text-[10px] text-[#b3b3b3]">(nécessite "virtual-audio-capturer" installé — sinon vidéo silencieuse)</span>
+        </div>
+
+        <div className="pt-3 border-t border-white/[0.06]">
+          <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3] mb-1.5">
+            <Rewind className="w-3 h-3" /> Durée du replay buffer ({replaySeconds}s)
+          </div>
+          <div className="flex items-center gap-3">
+            <input
+              type="range"
+              min={10}
+              max={120}
+              step={5}
+              value={replaySeconds}
+              onChange={(e) => setReplaySeconds(parseInt(e.target.value, 10))}
+              disabled={replayActive}
+              className="flex-1 accent-[#1ed760] h-1.5 disabled:opacity-50"
+            />
+            <span className="font-mono font-bold text-white w-12 text-right">{replaySeconds}s</span>
+            <button
+              onClick={() => setReplayEnabled(!replayEnabled)}
+              className={`px-3 py-1.5 rounded-full text-[11px] font-bold uppercase transition-colors ${
+                replayEnabled ? "bg-[#1ed760] text-black" : "bg-[#1f1f1f] text-white hover:bg-[#252525]"
+              }`}
+              style={{ letterSpacing: "1.4px" }}
+            >
+              {replayEnabled ? "Buffer ON" : "Buffer OFF"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* HISTORY */}
+      <h2 className="text-[11px] uppercase font-bold text-[#b3b3b3] mb-3 flex items-center justify-between" style={{ letterSpacing: "1.4px" }}>
+        <span>Historique ({history.length})</span>
+        <button onClick={refreshHistory} className="text-[#b3b3b3] hover:text-white text-[10px] font-normal">⟳ Refresh</button>
       </h2>
       <div className="bg-[#181818] rounded-xl overflow-hidden mb-6">
-        {recent.length === 0 ? (
-          <div className="p-6 text-center text-[#b3b3b3] text-sm">
-            Aucune capture pour le moment.
-          </div>
+        {history.length === 0 ? (
+          <div className="p-6 text-center text-[#b3b3b3] text-sm">Aucune capture en historique.</div>
         ) : (
-          <div className="divide-y divide-white/[0.04]">
-            {recent.map((f, i) => (
-              <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02]">
-                {f.kind === "screenshot"
-                  ? <Camera className="w-4 h-4 text-[#1ed760] shrink-0" />
-                  : <Video className="w-4 h-4 text-[#1ed760] shrink-0" />}
+          <div className="divide-y divide-white/[0.04] max-h-96 overflow-y-auto">
+            {history.map((c) => (
+              <div key={c.id} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02]">
+                {c.kind === "screenshot" && <Camera className="w-4 h-4 text-[#1ed760] shrink-0" />}
+                {c.kind === "recording"  && <Video  className="w-4 h-4 text-[#1ed760] shrink-0" />}
+                {c.kind === "replay"     && <Rewind className="w-4 h-4 text-[#ffa42b] shrink-0" />}
                 <div className="flex-1 min-w-0">
-                  <div className="text-sm text-white font-bold truncate">{filename(f.path)}</div>
-                  <div className="text-[11px] text-[#b3b3b3] font-mono truncate">{f.path}</div>
+                  <div className="text-sm text-white font-bold truncate">{filename(c.path)}</div>
+                  <div className="text-[11px] text-[#b3b3b3] font-mono truncate">
+                    {c.path}
+                    {c.size_bytes != null && <span className="ml-2">{formatBytes(c.size_bytes)}</span>}
+                    {c.duration_sec != null && <span className="ml-2">{c.duration_sec}s</span>}
+                  </div>
                 </div>
-                <span className="text-[10px] text-[#b3b3b3] shrink-0">{timeAgo(f.at)}</span>
+                <span className="text-[10px] text-[#b3b3b3] shrink-0">{timeAgo(c.created_at)}</span>
                 <button
-                  onClick={() => openFolder(f.path)}
+                  onClick={() => openPath(c.path.replace(/[\\/][^\\/]+$/, "")).catch(console.error)}
                   className="p-2 rounded hover:bg-white/[0.06] text-[#b3b3b3] hover:text-white transition-colors"
                   title="Ouvrir le dossier"
                 >
                   <Folder className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={async () => { await dbDeleteCapture(c.id); refreshHistory(); }}
+                  className="p-2 rounded hover:bg-[#3a1f1f] text-[#b3b3b3] hover:text-[#f3727f] transition-colors"
+                  title="Supprimer de l'historique (le fichier reste sur le disque)"
+                >
+                  <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             ))}
@@ -288,24 +444,47 @@ export default function Capture() {
 
       {/* STATUS TOAST */}
       {status.kind !== "idle" && <StatusToast status={status} />}
-
-      {/* TIPS */}
-      <div className="bg-[#181818] rounded-xl p-5 text-xs text-[#b3b3b3]">
-        <p className="mb-2"><strong className="text-white">💡 Note</strong> :</p>
-        <ul className="space-y-1 list-disc list-inside">
-          <li>Le screenshot/recording capture <strong className="text-white">tout l'écran principal</strong> (gdigrab).</li>
-          <li>Hardware encoding (NVENC/AMF/QSV) = <strong className="text-white">~1-3% CPU</strong> en jeu vs ~20% pour libx264.</li>
-          <li>Le bouton "Arrêter" envoie 'q' à FFmpeg pour finaliser proprement le moov atom du MP4.</li>
-          <li>Phase suivante (v0.1.8) : hotkeys globaux F9/F10/F11 pour capturer pendant que le jeu est focus.</li>
-        </ul>
-      </div>
     </>
   );
 }
 
 /* ============================================================
-   Helpers
+   Subcomponents
    ============================================================ */
+
+function ActionCard({ icon: Icon, title, subtitle, desc, buttonLabel, onClick, disabled, danger, active }: {
+  icon: any; title: string; subtitle: string; desc: string; buttonLabel: string;
+  onClick: () => void; disabled?: boolean; danger?: boolean; active?: boolean;
+}) {
+  const ringClass = danger ? "ring-1 ring-[#f3727f]" : active ? "ring-1 ring-[#1ed760]" : "";
+  const iconBg = danger ? "bg-[#f3727f] animate-pulse" : active ? "bg-[#1ed760]" : "bg-[#1ed760]";
+  const btnClass = danger
+    ? "bg-[#f3727f] hover:scale-105 text-black"
+    : "bg-[#1ed760] hover:scale-105 text-black disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed";
+  return (
+    <div className={`bg-[#181818] rounded-xl p-5 flex flex-col gap-3 ${ringClass}`}>
+      <div className="flex items-center gap-3">
+        <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${iconBg}`}>
+          <Icon className="w-5 h-5 text-black" strokeWidth={2.5} />
+        </div>
+        <div>
+          <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3]">{subtitle}</div>
+          <div className="text-base font-extrabold text-white">{title}</div>
+        </div>
+      </div>
+      <p className="text-xs text-[#b3b3b3] flex-1 min-h-[2.5em]">{desc}</p>
+      <button
+        onClick={onClick}
+        disabled={disabled}
+        className={`inline-flex items-center justify-center gap-1.5 px-4 py-2.5 rounded-full text-[11px] font-bold uppercase transition-transform ${btnClass}`}
+        style={{ letterSpacing: "1.4px" }}
+      >
+        {danger ? <Square className="w-3.5 h-3.5 fill-current" /> : <Icon className="w-3.5 h-3.5" />}
+        {buttonLabel}
+      </button>
+    </div>
+  );
+}
 
 function Field({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
   return (
@@ -318,6 +497,12 @@ function Field({ icon: Icon, label, children }: { icon: any; label: string; chil
   );
 }
 
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-block px-2 py-0.5 bg-[#1f1f1f] border border-[#3a3a3a] rounded font-mono text-[10px] font-bold text-[#1ed760]">{children}</span>
+  );
+}
+
 function StatusToast({ status }: { status: Exclude<Status, { kind: "idle" }> }) {
   const colors = {
     busy: { bg: "#1f1f1f", border: "#1ed760", text: "text-white",     Icon: Loader2 },
@@ -327,10 +512,7 @@ function StatusToast({ status }: { status: Exclude<Status, { kind: "idle" }> }) 
   const c = colors[status.kind];
   const Icon = c.Icon;
   return (
-    <div
-      className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg text-sm font-bold ${c.text} max-w-sm`}
-      style={{ background: c.bg, border: `1px solid ${c.border}`, boxShadow: "rgba(0,0,0,0.5) 0px 8px 24px" }}
-    >
+    <div className={`fixed bottom-6 right-6 z-50 px-4 py-3 rounded-lg text-sm font-bold ${c.text} max-w-sm`} style={{ background: c.bg, border: `1px solid ${c.border}`, boxShadow: "rgba(0,0,0,0.5) 0px 8px 24px" }}>
       <div className="flex items-center gap-2">
         <Icon className={`w-4 h-4 shrink-0 ${status.kind === "busy" ? "animate-spin" : ""}`} />
         <span>{status.msg}</span>
@@ -344,8 +526,7 @@ function StatusToast({ status }: { status: Exclude<Status, { kind: "idle" }> }) 
 
 function formatElapsed(s: number): string {
   const m = Math.floor(s / 60);
-  const ss = s % 60;
-  return `${m.toString().padStart(2, "0")}:${ss.toString().padStart(2, "0")}`;
+  return `${m.toString().padStart(2, "0")}:${(s % 60).toString().padStart(2, "0")}`;
 }
 
 function filename(p: string): string {
@@ -354,7 +535,15 @@ function filename(p: string): string {
 
 function timeAgo(t: number): string {
   const s = Math.floor((Date.now() - t) / 1000);
-  if (s < 60) return `${s}s`;
+  if (s < 60)   return `${s}s`;
   if (s < 3600) return `${Math.floor(s / 60)} min`;
-  return `${Math.floor(s / 3600)} h`;
+  if (s < 86400) return `${Math.floor(s / 3600)} h`;
+  return new Date(t).toLocaleDateString();
+}
+
+function formatBytes(b: number): string {
+  if (b < 1024) return `${b} B`;
+  if (b < 1024 * 1024) return `${(b / 1024).toFixed(0)} KB`;
+  if (b < 1024 * 1024 * 1024) return `${(b / 1024 / 1024).toFixed(1)} MB`;
+  return `${(b / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
