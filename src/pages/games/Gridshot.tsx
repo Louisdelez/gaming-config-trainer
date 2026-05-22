@@ -3,7 +3,6 @@ import { Grid3X3, Play, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GameShell from "../../components/GameShell";
 import AimZone from "../../components/AimZone";
-import SensitivityControl from "../../components/SensitivityControl";
 import { useScores } from "../../store/scores";
 
 const DURATION = 30; // seconds
@@ -101,9 +100,7 @@ export default function Gridshot() {
       currentScore={finalScore ?? hits}
       accent="text-emerald-400"
     >
-      <SensitivityControl disabled={running} />
-
-      <div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
+<div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
         <div className="flex gap-6 text-sm">
           <span><span className="text-slate-400">Time:</span> <span className="font-mono font-bold text-[#ffa42b]">{timeLeft}s</span></span>
           <span><span className="text-slate-400">Hits:</span> <span className="font-mono font-bold text-[#1ed760]">{hits}</span></span>

@@ -3,7 +3,6 @@ import { Zap, Play, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GameShell from "../../components/GameShell";
 import AimZone from "../../components/AimZone";
-import SensitivityControl from "../../components/SensitivityControl";
 import { useScores } from "../../store/scores";
 
 const TOTAL_SHOTS = 15;
@@ -81,8 +80,7 @@ export default function Flickshot() {
 
   return (
     <GameShell icon={Zap} title={t("nav.flickshot")} description={t("games.flickshotDesc")} gameKey="flickshot" unit="ms" currentScore={avgMs} accent="text-yellow-400">
-      <SensitivityControl disabled={running} />
-      <div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
+<div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
         <div className="flex gap-6 text-sm">
           <span><span className="text-slate-400">Shot:</span> <span className="font-mono font-bold text-[#ffa42b]">{shotTimes.length}/{TOTAL_SHOTS}</span></span>
           <span><span className="text-slate-400">Last:</span> <span className="font-mono font-bold text-[#1ed760]">{shotTimes.length > 0 ? shotTimes[shotTimes.length - 1].toFixed(0) : "-"} ms</span></span>

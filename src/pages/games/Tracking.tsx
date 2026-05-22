@@ -3,7 +3,6 @@ import { Move, Play, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GameShell from "../../components/GameShell";
 import AimZone from "../../components/AimZone";
-import SensitivityControl from "../../components/SensitivityControl";
 import { useScores } from "../../store/scores";
 
 const DURATION = 30;
@@ -101,8 +100,7 @@ export default function Tracking() {
 
   return (
     <GameShell icon={Move} title={t("nav.tracking")} description={t("games.trackingDesc")} gameKey="tracking" unit="%" currentScore={accuracyPct} accent="text-cyan-400">
-      <SensitivityControl disabled={running} />
-      <div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
+<div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
         <div className="flex gap-6 text-sm">
           <span><span className="text-slate-400">Time:</span> <span className="font-mono font-bold text-[#ffa42b]">{timeLeft}s</span></span>
           <span><span className="text-slate-400">On Target:</span> <span className="font-mono font-bold text-white">{totalFrames.current > 0 ? ((onTargetFrames.current / totalFrames.current) * 100).toFixed(1) : 0}%</span></span>
