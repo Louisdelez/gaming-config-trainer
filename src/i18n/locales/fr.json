@@ -1,0 +1,117 @@
+{
+  "app": {
+    "title": "Gaming Config & Trainer",
+    "subtitle": "Optimise ton setup. Entraîne tes réflexes."
+  },
+  "nav": {
+    "home": "Accueil",
+    "settings": "Paramètres",
+    "configs": "Configs Jeux",
+    "games": "Aim Trainers",
+    "hardware": "Tests Matériel",
+    "scores": "Historique",
+    "valorant": "Valorant",
+    "fortnite": "Fortnite",
+    "lol": "League of Legends",
+    "reaction": "Temps de Réaction",
+    "gridshot": "Gridshot",
+    "tracking": "Tracking",
+    "flickshot": "Flickshot",
+    "cps": "Vitesse de Clic (CPS)",
+    "microshots": "Microshots",
+    "strafe": "Cibles Mobiles",
+    "stroop": "Test de Stroop",
+    "sequence": "Mémoire Séquence",
+    "visualmatch": "Visual Match",
+    "polling": "Polling Rate Souris",
+    "clicklatency": "Latence Clic",
+    "monitorhz": "Hz Moniteur",
+    "network": "Speed Test"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": "Langue",
+    "keyboard": "Disposition Clavier",
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    },
+    "keyboards": {
+      "qwerty": "QWERTY (US)",
+      "qwertz": "QWERTZ (CH/DE)",
+      "azerty": "AZERTY (FR/BE)"
+    },
+    "saved": "Paramètres enregistrés"
+  },
+  "home": {
+    "welcome": "Bienvenue",
+    "intro": "Ton outil tout-en-un pour optimiser tes configs de jeu et entraîner tes réflexes.",
+    "quickAccess": "Accès Rapide",
+    "configsCard": {
+      "title": "Configs de Jeu",
+      "desc": "Réglages niveau pro pour tes jeux favoris"
+    },
+    "gamesCard": {
+      "title": "Aim Trainers",
+      "desc": "10 mini-jeux pour entraîner tes réflexes"
+    },
+    "hardwareCard": {
+      "title": "Tests Matériel",
+      "desc": "Teste ta souris, ton écran et la latence des clics"
+    }
+  },
+  "configs": {
+    "mouse": "Souris",
+    "sensitivity": "Sensibilité",
+    "keybinds": "Touches",
+    "crosshair": "Viseur",
+    "graphics": "Graphismes",
+    "audio": "Audio",
+    "minimap": "Minimap",
+    "pros": "Joueurs Pros",
+    "tips": "Astuces",
+    "valuesShown": "Valeurs affichées pour",
+    "dpi": "DPI",
+    "pollingRate": "Polling Rate",
+    "mouseAccel": "Accélération Souris",
+    "rawInput": "Raw Input",
+    "off": "OFF",
+    "on": "ON"
+  },
+  "games": {
+    "start": "Démarrer",
+    "restart": "Recommencer",
+    "stop": "Arrêter",
+    "score": "Score",
+    "best": "Meilleur",
+    "average": "Moyenne",
+    "time": "Temps",
+    "attempts": "Essais",
+    "instructions": "Instructions",
+    "result": "Résultat",
+    "ms": "ms",
+    "tooEarly": "Trop tôt ! Attends le vert.",
+    "clickToStart": "Clique n'importe où pour commencer",
+    "saveScore": "Enregistrer le Score",
+    "reactionDesc": "Quand l'écran devient vert, clique le plus vite possible. Mesure ta latence visuelle.",
+    "gridshotDesc": "Clique un maximum de cibles en 30 secondes. Les cibles apparaissent au hasard dans une grille.",
+    "trackingDesc": "Maintiens clic gauche et suis la sphère mobile pendant 30s. Score = % temps sur la cible.",
+    "flickshotDesc": "Une cible apparaît au hasard. Clique-la le plus vite possible, puis reviens au centre.",
+    "cpsDesc": "Clique le plus vite possible pendant 10 secondes. Test de vitesse de clic physique.",
+    "microshotsDesc": "Comme Gridshot mais avec des cibles minuscules. Test de précision pure.",
+    "strafeDesc": "Clique sur les cibles qui bougent latéralement. Entraîne le kiting et la prédiction.",
+    "stroopDesc": "Clique sur la COULEUR du mot, pas sa signification. Test cognitif.",
+    "sequenceDesc": "Mémorise et répète la séquence croissante. Teste la mémoire de travail.",
+    "visualMatchDesc": "Clique sur la cible qui correspond au pattern montré. Prise de décision sous pression.",
+    "pollingDesc": "Bouge ta souris rapidement. Mesure le polling rate réel (Hz) de ta souris.",
+    "clickLatencyDesc": "Clique le plus vite possible après le signal. Estime la latence hardware de ta souris.",
+    "monitorHzDesc": "Mesure le refresh rate réel de ton écran via requestAnimationFrame."
+  },
+  "common": {
+    "loading": "Chargement...",
+    "comingSoon": "Bientôt disponible",
+    "back": "Retour",
+    "save": "Enregistrer",
+    "cancel": "Annuler"
+  }
+}

@@ -1,0 +1,232 @@
+@import "tailwindcss";
+
+@theme {
+  /* Spotify-inspired palette */
+  --color-spotify-bg: #121212;
+  --color-spotify-surface: #181818;
+  --color-spotify-surface-2: #1f1f1f;
+  --color-spotify-card: #252525;
+  --color-spotify-card-2: #272727;
+  --color-spotify-green: #1ed760;
+  --color-spotify-green-dark: #1db954;
+  --color-spotify-text: #ffffff;
+  --color-spotify-text-dim: #b3b3b3;
+  --color-spotify-text-mid: #cbcbcb;
+  --color-spotify-border: #4d4d4d;
+  --color-spotify-border-light: #7c7c7c;
+  --color-spotify-negative: #f3727f;
+  --color-spotify-warning: #ffa42b;
+  --color-spotify-info: #539df5;
+
+  --font-sans: SpotifyMixUI, CircularSp, "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-title: SpotifyMixUITitle, CircularSp, "Helvetica Neue", Helvetica, Arial, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", "Consolas", monospace;
+}
+
+:root {
+  color-scheme: dark;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: var(--color-spotify-bg);
+  color: var(--color-spotify-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-feature-settings: "ss01", "cv01";
+}
+
+/* Pure dark background — no decorative gradients per Spotify philosophy */
+body {
+  background: var(--color-spotify-bg);
+}
+
+/* Scrollbar — minimal, Spotify-like */
+::-webkit-scrollbar { width: 12px; height: 12px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  border: 3px solid var(--color-spotify-bg);
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+
+/* Selection */
+::selection {
+  background: var(--color-spotify-green);
+  color: #000;
+}
+
+/* Game canvases — force crosshair cursor everywhere inside */
+.game-canvas,
+.game-canvas * {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: crosshair !important;
+}
+
+/* Focus */
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--color-spotify-green);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* ============================================
+   SPOTIFY UTILITY CLASSES
+   ============================================ */
+
+/* Primary CTA — Spotify Green pill */
+.btn-spotify {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-spotify-green);
+  color: #000000;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  padding: 12px 32px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease, background-color 0.15s ease;
+  white-space: nowrap;
+}
+.btn-spotify:hover:not(:disabled) {
+  background: #1fdf64;
+  transform: scale(1.04);
+}
+.btn-spotify:active:not(:disabled) { transform: scale(0.98); }
+.btn-spotify:disabled { opacity: 0.5; cursor: default; }
+
+.btn-spotify-sm {
+  padding: 8px 20px;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+}
+
+/* Secondary — dark pill */
+.btn-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--color-spotify-surface-2);
+  color: var(--color-spotify-text);
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.btn-pill:hover { background: var(--color-spotify-card); }
+
+/* Outlined pill */
+.btn-outlined {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  color: var(--color-spotify-text);
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  border: 1px solid var(--color-spotify-border-light);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease;
+}
+.btn-outlined:hover {
+  border-color: var(--color-spotify-text);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Circular play button */
+.btn-circular {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: var(--color-spotify-green);
+  color: #000;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+  box-shadow: rgba(0, 0, 0, 0.5) 0px 4px 12px;
+}
+.btn-circular:hover { transform: scale(1.06); }
+
+/* Card surface */
+.spotify-card {
+  background: var(--color-spotify-surface);
+  border-radius: 8px;
+  padding: 20px;
+  transition: background-color 0.2s ease;
+}
+.spotify-card:hover { background: var(--color-spotify-card); }
+
+.spotify-card-2 {
+  background: var(--color-spotify-surface-2);
+  border-radius: 8px;
+  padding: 20px;
+}
+
+/* Section title — bold compact */
+.spotify-title {
+  font-family: var(--font-title);
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.2;
+  letter-spacing: -0.02em;
+  color: var(--color-spotify-text);
+}
+
+.spotify-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1.4px;
+  color: var(--color-spotify-text-dim);
+}
+
+/* Dim text */
+.text-dim { color: var(--color-spotify-text-dim); }
+.text-mid { color: var(--color-spotify-text-mid); }
+.text-green { color: var(--color-spotify-green); }
+
+/* Elevated shadow */
+.shadow-spotify {
+  box-shadow: rgba(0, 0, 0, 0.5) 0px 8px 24px;
+}
+.shadow-spotify-sm {
+  box-shadow: rgba(0, 0, 0, 0.3) 0px 8px 8px;
+}
+
+/* Inset input border */
+.input-spotify {
+  background: var(--color-spotify-surface-2);
+  color: var(--color-spotify-text);
+  border-radius: 500px;
+  padding: 12px 24px;
+  border: none;
+  outline: none;
+  box-shadow: rgb(124, 124, 124) 0px 0px 0px 1px inset;
+}
+.input-spotify:focus {
+  box-shadow: rgb(255, 255, 255) 0px 0px 0px 2px inset;
+}

@@ -1,0 +1,117 @@
+{
+  "app": {
+    "title": "Gaming Config & Trainer",
+    "subtitle": "Optimize your gear. Train your reflexes."
+  },
+  "nav": {
+    "home": "Home",
+    "settings": "Settings",
+    "configs": "Game Configs",
+    "games": "Aim Trainers",
+    "hardware": "Hardware Tests",
+    "scores": "Score History",
+    "valorant": "Valorant",
+    "fortnite": "Fortnite",
+    "lol": "League of Legends",
+    "reaction": "Reaction Time",
+    "gridshot": "Gridshot",
+    "tracking": "Tracking",
+    "flickshot": "Flickshot",
+    "cps": "Click Speed (CPS)",
+    "microshots": "Microshots",
+    "strafe": "Strafe Targets",
+    "stroop": "Stroop Test",
+    "sequence": "Sequence Memory",
+    "visualmatch": "Visual Match",
+    "polling": "Mouse Polling Rate",
+    "clicklatency": "Click Latency",
+    "monitorhz": "Monitor Hz",
+    "network": "Speed Test"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "keyboard": "Keyboard Layout",
+    "languages": {
+      "en": "English",
+      "fr": "Français"
+    },
+    "keyboards": {
+      "qwerty": "QWERTY (US)",
+      "qwertz": "QWERTZ (CH/DE)",
+      "azerty": "AZERTY (FR/BE)"
+    },
+    "saved": "Settings saved"
+  },
+  "home": {
+    "welcome": "Welcome",
+    "intro": "Your all-in-one toolkit for optimizing game settings and training reflexes.",
+    "quickAccess": "Quick Access",
+    "configsCard": {
+      "title": "Game Configs",
+      "desc": "Pro-grade settings for your favorite games"
+    },
+    "gamesCard": {
+      "title": "Aim Trainers",
+      "desc": "10 mini-games to train your reflexes"
+    },
+    "hardwareCard": {
+      "title": "Hardware Tests",
+      "desc": "Test your mouse, monitor and click latency"
+    }
+  },
+  "configs": {
+    "mouse": "Mouse",
+    "sensitivity": "Sensitivity",
+    "keybinds": "Keybinds",
+    "crosshair": "Crosshair",
+    "graphics": "Graphics",
+    "audio": "Audio",
+    "minimap": "Minimap",
+    "pros": "Pro Players",
+    "tips": "Tips",
+    "valuesShown": "Values shown for",
+    "dpi": "DPI",
+    "pollingRate": "Polling Rate",
+    "mouseAccel": "Mouse Acceleration",
+    "rawInput": "Raw Input",
+    "off": "OFF",
+    "on": "ON"
+  },
+  "games": {
+    "start": "Start",
+    "restart": "Restart",
+    "stop": "Stop",
+    "score": "Score",
+    "best": "Best",
+    "average": "Average",
+    "time": "Time",
+    "attempts": "Attempts",
+    "instructions": "Instructions",
+    "result": "Result",
+    "ms": "ms",
+    "tooEarly": "Too early! Wait for green.",
+    "clickToStart": "Click anywhere to start",
+    "saveScore": "Save Score",
+    "reactionDesc": "When the screen turns green, click as fast as you can. Measures your visual reaction latency.",
+    "gridshotDesc": "Click as many targets as you can in 30 seconds. Targets spawn randomly in a grid.",
+    "trackingDesc": "Hold left-click and follow the moving sphere for 30 seconds. Score = % time on target.",
+    "flickshotDesc": "A single target pops at random. Click it as fast as possible, then return to center.",
+    "cpsDesc": "Click as fast as you can for 10 seconds. Tests your physical click speed.",
+    "microshotsDesc": "Same as gridshot but with tiny targets. Pure precision test.",
+    "strafeDesc": "Click on moving targets that strafe horizontally. Trains kiting and prediction.",
+    "stroopDesc": "Click the COLOR of the word, not its meaning. Cognitive aim test.",
+    "sequenceDesc": "Memorize and repeat the growing sequence. Tests working memory.",
+    "visualMatchDesc": "Click the target that matches the shown pattern. Decision-making under pressure.",
+    "pollingDesc": "Move your mouse rapidly. Measures the real polling rate (Hz) of your mouse.",
+    "clickLatencyDesc": "Click as fast as you can after the cue. Estimates your mouse hardware latency.",
+    "monitorHzDesc": "Measures the real refresh rate of your monitor via requestAnimationFrame."
+  },
+  "common": {
+    "loading": "Loading...",
+    "comingSoon": "Coming soon",
+    "back": "Back",
+    "save": "Save",
+    "cancel": "Cancel"
+  }
+}
