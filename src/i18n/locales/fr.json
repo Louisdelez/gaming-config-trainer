@@ -26,7 +26,8 @@
     "polling": "Polling Rate Souris",
     "clicklatency": "Latence Clic",
     "monitorhz": "Hz Moniteur",
-    "network": "Speed Test"
+    "network": "Speed Test",
+    "capture": "Capture"
   },
   "settings": {
     "title": "Paramètres",

@@ -26,7 +26,8 @@
     "polling": "Mouse Polling Rate",
     "clicklatency": "Click Latency",
     "monitorhz": "Monitor Hz",
-    "network": "Speed Test"
+    "network": "Speed Test",
+    "capture": "Capture"
   },
   "settings": {
     "title": "Settings",

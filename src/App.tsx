@@ -25,6 +25,7 @@ import PollingRate from "./pages/hardware/PollingRate";
 import ClickLatency from "./pages/hardware/ClickLatency";
 import MonitorHz from "./pages/hardware/MonitorHz";
 import NetworkTest from "./pages/hardware/Network";
+import Capture from "./pages/Capture";
 import Scores from "./pages/Scores";
 
 function App() {
@@ -79,6 +80,7 @@ function App() {
         <Route path="/hardware/clicklatency" element={<ClickLatency />} />
         <Route path="/hardware/monitorhz" element={<MonitorHz />} />
         <Route path="/hardware/network" element={<NetworkTest />} />
+        <Route path="/capture" element={<Capture />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>
