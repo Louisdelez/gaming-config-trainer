@@ -1,7 +1,9 @@
-﻿import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Crosshair, Play, Save } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import GameShell from "../../components/GameShell";
+import AimZone from "../../components/AimZone";
+import SensitivityControl from "../../components/SensitivityControl";
 import { useScores } from "../../store/scores";
 
 const DURATION = 30;
@@ -18,14 +20,26 @@ export default function Microshots() {
   const [misses, setMisses] = useState(0);
   const [targets, setTargets] = useState<Target[]>([]);
   const [finalScore, setFinalScore] = useState<number | null>(null);
+  const [canvasSize, setCanvasSize] = useState({ w: 800, h: 480 });
   const canvasRef = useRef<HTMLDivElement>(null);
   const nextId = useRef(0);
   const addScore = useScores((s) => s.addScore);
 
+  useEffect(() => {
+    const update = () => {
+      if (canvasRef.current) {
+        const r = canvasRef.current.getBoundingClientRect();
+        setCanvasSize({ w: r.width, h: r.height });
+      }
+    };
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
   const randomTarget = (): Target => {
-    const rect = canvasRef.current?.getBoundingClientRect();
-    const w = rect ? rect.width - TARGET_SIZE : 800;
-    const h = rect ? rect.height - TARGET_SIZE : 400;
+    const w = canvasSize.w - TARGET_SIZE;
+    const h = canvasSize.h - TARGET_SIZE;
     return { id: nextId.current++, x: Math.random() * w, y: Math.random() * h };
   };
 
@@ -34,22 +48,36 @@ export default function Microshots() {
     setTargets(Array.from({ length: TARGET_COUNT }, randomTarget));
     const timer = setInterval(() => setTimeLeft((t) => Math.max(0, t - 1)), 1000);
     return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [running]);
 
   useEffect(() => {
-    if (running && timeLeft === 0) {
-      setRunning(false);
-      setFinalScore(hits);
-    }
+    if (running && timeLeft === 0) { setRunning(false); setFinalScore(hits); }
   }, [timeLeft, running, hits]);
 
   const start = () => { setRunning(true); setHits(0); setMisses(0); setTimeLeft(DURATION); setFinalScore(null); };
-  const hit = (id: number) => { setHits((h) => h + 1); setTargets((arr) => arr.map((t) => t.id === id ? randomTarget() : t)); };
-  const miss = () => { if (running) setMisses((m) => m + 1); };
+
+  const handleShoot = (cx: number, cy: number) => {
+    if (!running) return;
+    const r = TARGET_SIZE / 2;
+    const hitIndex = targets.findIndex((t) => {
+      const dx = (t.x + r) - cx;
+      const dy = (t.y + r) - cy;
+      return dx * dx + dy * dy <= r * r;
+    });
+    if (hitIndex >= 0) {
+      setHits((h) => h + 1);
+      setTargets((arr) => arr.map((t, i) => i === hitIndex ? randomTarget() : t));
+    } else {
+      setMisses((m) => m + 1);
+    }
+  };
+
   const save = () => { if (finalScore != null) { addScore({ game: "microshots", score: finalScore, unit: "hits" }); setFinalScore(null); } };
 
   return (
     <GameShell icon={Crosshair} title={t("nav.microshots")} description={t("games.microshotsDesc")} gameKey="microshots" unit="hits" currentScore={finalScore ?? hits} accent="text-violet-400">
+      <SensitivityControl disabled={running} />
       <div className="bg-[#1f1f1f] px-4 py-3 flex items-center justify-between border-b border-white/[0.04]">
         <div className="flex gap-6 text-sm">
           <span><span className="text-slate-400">Time:</span> <span className="font-mono font-bold text-[#ffa42b]">{timeLeft}s</span></span>
@@ -60,12 +88,14 @@ export default function Microshots() {
         {!running && finalScore == null && <button onClick={start} className="btn-spotify btn-spotify-sm"><Play className="w-3.5 h-3.5" /> {t("games.start")}</button>}
         {finalScore != null && <div className="flex gap-2"><button onClick={save} className="btn-spotify btn-spotify-sm"><Save className="w-3.5 h-3.5" /> {t("games.saveScore")}</button><button onClick={start} className="btn-pill">{t("games.restart")}</button></div>}
       </div>
-      <div ref={canvasRef} onClick={miss} className="game-canvas relative h-[480px] bg-[#121212]">
-        {running && targets.map((t) => (
-          <button key={t.id} onClick={(e) => { e.stopPropagation(); hit(t.id); }} className="absolute rounded-full bg-[#1ed760] shadow-[0_0_10px_rgba(30,215,96,0.5)]" style={{ left: t.x, top: t.y, width: TARGET_SIZE, height: TARGET_SIZE }} />
-        ))}
-        {!running && finalScore == null && <div className="absolute inset-0 flex items-center justify-center text-slate-500">{t("games.clickToStart")}</div>}
-        {!running && finalScore != null && <div className="absolute inset-0 flex flex-col items-center justify-center text-white"><div className="text-6xl font-bold text-[#1ed760]">{finalScore}</div><div className="text-sm text-slate-400 mt-2">precision hits in {DURATION}s</div></div>}
+      <div ref={canvasRef} className="game-canvas">
+        <AimZone active={running} className="h-[480px] bg-[#121212]" onShoot={handleShoot}>
+          {running && targets.map((t) => (
+            <div key={t.id} className="absolute rounded-full bg-[#1ed760] shadow-[0_0_10px_rgba(30,215,96,0.5)] pointer-events-none" style={{ left: t.x, top: t.y, width: TARGET_SIZE, height: TARGET_SIZE }} />
+          ))}
+          {!running && finalScore == null && <div className="absolute inset-0 flex items-center justify-center text-slate-500 pointer-events-none">{t("games.clickToStart")}</div>}
+          {!running && finalScore != null && <div className="absolute inset-0 flex flex-col items-center justify-center text-white pointer-events-none"><div className="text-6xl font-bold text-[#1ed760]">{finalScore}</div><div className="text-sm text-slate-400 mt-2">precision hits in {DURATION}s</div></div>}
+        </AimZone>
       </div>
     </GameShell>
   );
