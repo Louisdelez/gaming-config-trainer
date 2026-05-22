@@ -5,8 +5,13 @@ import {
   AIM_SENS_MIN, AIM_SENS_MAX, AIM_SENS_DEFAULT,
   CROSSHAIR_SHAPES, CROSSHAIR_COLOR_PRESETS,
 } from "../store/settings";
+import { useActiveProfile, type ValorantProfile, type FortniteProfile, type LolProfile } from "../store/profiles";
+import { aimSensFromValorant, aimSensFromFortnite, aimSensFromLol } from "../lib/aimPresets";
 import PageHeader from "../components/PageHeader";
 import CrosshairSvg from "../components/CrosshairSvg";
+import valorantIcon from "../assets/games/valorant.png";
+import fortniteIcon from "../assets/games/fortnite.svg";
+import lolIcon from "../assets/games/lol.png";
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -20,6 +25,14 @@ export default function Settings() {
   const setAimSensitivity = useSettings((s) => s.setAimSensitivity);
   const setCrosshairShape = useSettings((s) => s.setCrosshairShape);
   const setCrosshairColor = useSettings((s) => s.setCrosshairColor);
+
+  // Active profiles for sensitivity presets
+  const valorantProfile = useActiveProfile("valorant") as ValorantProfile;
+  const fortniteProfile = useActiveProfile("fortnite") as FortniteProfile;
+  const lolProfile      = useActiveProfile("lol") as LolProfile;
+  const valSens  = aimSensFromValorant(valorantProfile);
+  const fortSens = aimSensFromFortnite(fortniteProfile);
+  const lolSens  = aimSensFromLol(lolProfile);
 
   const langs: Language[] = ["fr", "en"];
   const kbs: KeyboardLayout[] = ["qwerty", "qwertz", "azerty"];
@@ -109,9 +122,42 @@ export default function Settings() {
               <span>1.0 (normal)</span>
               <span>5.0 (très rapide)</span>
             </div>
-            <p className="text-xs text-[#b3b3b3] mt-4">
+            <p className="text-xs text-[#b3b3b3] mt-4 mb-3">
               Multiplicateur appliqué aux mouvements de souris dans les <strong className="text-white">5 aim trainers</strong> (Gridshot, Microshots, Strafe, Flickshot, Tracking). La sensibilité utilise le <strong className="text-white">Pointer Lock API</strong> + un crosshair custom.
             </p>
+
+            {/* Presets from game profiles */}
+            <div className="pt-4 border-t border-white/[0.06]">
+              <div className="text-[10px] uppercase font-bold text-[#b3b3b3] mb-2.5" style={{ letterSpacing: "1.4px" }}>
+                Reprendre depuis un profil de jeu
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                <PresetButton
+                  img={valorantIcon}
+                  label="Valorant"
+                  hint={`eDPI ${valSens.edpi.toFixed(0)} → ${valSens.value.toFixed(2)}×`}
+                  active={Math.abs(aimSens - valSens.value) < 0.005}
+                  onClick={() => setAimSensitivity(valSens.value)}
+                />
+                <PresetButton
+                  img={fortniteIcon}
+                  label="Fortnite"
+                  hint={`eDPI ${fortSens.edpi.toFixed(0)} → ${fortSens.value.toFixed(2)}×`}
+                  active={Math.abs(aimSens - fortSens.value) < 0.005}
+                  onClick={() => setAimSensitivity(fortSens.value)}
+                />
+                <PresetButton
+                  img={lolIcon}
+                  label="League of Legends"
+                  hint={`Speed ${lolProfile.gameMouseSpeed} → ${lolSens.value.toFixed(2)}×`}
+                  active={Math.abs(aimSens - lolSens.value) < 0.005}
+                  onClick={() => setAimSensitivity(lolSens.value)}
+                />
+              </div>
+              <p className="text-[10px] text-[#7c7c7c] mt-2 italic">
+                Approximation basée sur ton profil actif de chaque jeu (référence eDPI 300 ≈ 1.0×).
+              </p>
+            </div>
           </div>
         </Section>
 
@@ -213,6 +259,31 @@ function Section({ icon: Icon, title, children }: { icon: any; title: string; ch
       </h2>
       {children}
     </div>
+  );
+}
+
+function PresetButton({ img, label, hint, active, onClick }: {
+  img: string; label: string; hint: string; active: boolean; onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all text-left ${
+        active
+          ? "bg-[#1ed760] text-black"
+          : "bg-[#1f1f1f] text-white hover:bg-[#252525]"
+      }`}
+    >
+      <div className={`w-8 h-8 rounded-md flex items-center justify-center p-1 shrink-0 ${active ? "bg-black/10" : "bg-[#0f0f0f]"}`}>
+        <img src={img} alt="" className="w-full h-full object-contain" />
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-bold truncate">{label}</div>
+        <div className={`text-[10px] font-mono ${active ? "text-black/70" : "text-[#b3b3b3]"}`}>{hint}</div>
+      </div>
+      {active && <Check className="w-4 h-4 shrink-0" strokeWidth={3} />}
+    </button>
   );
 }
 
