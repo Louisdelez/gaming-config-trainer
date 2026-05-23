@@ -27,7 +27,8 @@
     "clicklatency": "Latence Clic",
     "monitorhz": "Hz Moniteur",
     "network": "Speed Test",
-    "capture": "Capture"
+    "capture": "Capture",
+    "library": "Bibliothèque"
   },
   "settings": {
     "title": "Paramètres",

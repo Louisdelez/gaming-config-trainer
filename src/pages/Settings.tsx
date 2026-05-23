@@ -1,5 +1,10 @@
-import { Settings as SettingsIcon, Languages, Keyboard, Crosshair, RotateCcw, Palette, Check } from "lucide-react";
+import { useEffect, useState } from "react";
+import {
+  Settings as SettingsIcon, Languages, Keyboard, Crosshair, RotateCcw, Palette, Check,
+  Video, Folder, Mic, MicOff, Rewind, Cpu, Film, Gauge,
+} from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   useSettings, type Language, type KeyboardLayout, type CrosshairShape,
   AIM_SENS_MIN, AIM_SENS_MAX, AIM_SENS_DEFAULT,
@@ -7,11 +12,22 @@ import {
 } from "../store/settings";
 import { useActiveProfile, type ValorantProfile, type FortniteProfile, type LolProfile } from "../store/profiles";
 import { aimSensFromValorant, aimSensFromFortnite, aimSensFromLol } from "../lib/aimPresets";
+import { detectEncoders, type EncoderId } from "../lib/capture";
 import PageHeader from "../components/PageHeader";
 import CrosshairSvg from "../components/CrosshairSvg";
 import valorantIcon from "../assets/games/valorant.png";
 import fortniteIcon from "../assets/games/fortnite.svg";
 import lolIcon from "../assets/games/lol.png";
+
+const ENCODER_LABEL: Record<EncoderId, string> = {
+  h264_nvenc: "NVIDIA NVENC (GPU)",
+  h264_amf:   "AMD AMF (GPU)",
+  h264_qsv:   "Intel QuickSync (GPU)",
+  h264_mf:    "Windows Media Foundation",
+  libx264:    "libx264 (CPU, max compat)",
+};
+const FPS_OPTIONS = [30, 60, 120, 144];
+const BITRATE_OPTIONS = [4000, 8000, 12000, 20000, 30000];
 
 export default function Settings() {
   const { t } = useTranslation();
@@ -20,11 +36,36 @@ export default function Settings() {
   const aimSens = useSettings((s) => s.aimSensitivity);
   const crosshairShape = useSettings((s) => s.crosshairShape);
   const crosshairColor = useSettings((s) => s.crosshairColor);
+  // Capture settings
+  const captureFolder  = useSettings((s) => s.captureFolder);
+  const captureEncoder = useSettings((s) => s.captureEncoder);
+  const captureFps     = useSettings((s) => s.captureFps);
+  const captureBitrate = useSettings((s) => s.captureBitrate);
+  const captureAudio   = useSettings((s) => s.captureAudio);
+  const replayEnabled  = useSettings((s) => s.replayEnabled);
+  const replaySeconds  = useSettings((s) => s.replaySeconds);
+
   const setLanguage = useSettings((s) => s.setLanguage);
   const setKeyboard = useSettings((s) => s.setKeyboard);
   const setAimSensitivity = useSettings((s) => s.setAimSensitivity);
   const setCrosshairShape = useSettings((s) => s.setCrosshairShape);
   const setCrosshairColor = useSettings((s) => s.setCrosshairColor);
+  const setCaptureFolder  = useSettings((s) => s.setCaptureFolder);
+  const setCaptureEncoder = useSettings((s) => s.setCaptureEncoder);
+  const setCaptureFps     = useSettings((s) => s.setCaptureFps);
+  const setCaptureBitrate = useSettings((s) => s.setCaptureBitrate);
+  const setCaptureAudio   = useSettings((s) => s.setCaptureAudio);
+  const setReplayEnabled  = useSettings((s) => s.setReplayEnabled);
+  const setReplaySeconds  = useSettings((s) => s.setReplaySeconds);
+
+  // Available encoders
+  const [availableEncoders, setAvailableEncoders] = useState<EncoderId[]>([]);
+  useEffect(() => { detectEncoders().then(setAvailableEncoders); }, []);
+
+  const pickCaptureFolder = async () => {
+    const dir = await openDialog({ directory: true, multiple: false });
+    if (typeof dir === "string") setCaptureFolder(dir);
+  };
 
   // Active profiles for sensitivity presets
   const valorantProfile = useActiveProfile("valorant") as ValorantProfile;
@@ -232,7 +273,6 @@ export default function Settings() {
         {/* Live preview */}
         <Section icon={Crosshair} title="Aperçu">
           <div className="bg-[#0a0a0a] rounded-lg h-40 flex items-center justify-center relative overflow-hidden">
-            {/* Grid pattern background for context */}
             <div
               className="absolute inset-0 opacity-30"
               style={{
@@ -246,8 +286,148 @@ export default function Settings() {
             Aperçu du crosshair utilisé dans les aim trainers
           </p>
         </Section>
+
+        {/* CAPTURE — DOSSIER */}
+        <Section icon={Folder} title="Dossier des captures">
+          <div className="bg-[#181818] rounded-lg p-5">
+            <p className="text-xs text-[#b3b3b3] mb-3">
+              Dossier où sont enregistrés tes screenshots, recordings et clips replay. Par défaut : <code className="text-white font-mono text-[10px]">Documents\Gaming Config Trainer</code>
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={captureFolder}
+                onChange={(e) => setCaptureFolder(e.target.value)}
+                placeholder="(restera vide = défaut Documents)"
+                className="flex-1 px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-mono outline-none"
+              />
+              <button
+                onClick={pickCaptureFolder}
+                className="px-4 py-2 rounded bg-[#1ed760] hover:scale-105 text-black text-[11px] font-bold uppercase transition-transform"
+                style={{ letterSpacing: "1.4px" }}
+              >
+                Parcourir
+              </button>
+              <button
+                onClick={() => setCaptureFolder("")}
+                className="px-4 py-2 rounded bg-[#1f1f1f] hover:bg-[#252525] text-white text-[11px] font-bold uppercase transition-colors"
+                style={{ letterSpacing: "1.4px" }}
+                title="Revenir au dossier par défaut"
+              >
+                Défaut
+              </button>
+            </div>
+          </div>
+        </Section>
+
+        {/* CAPTURE — QUALITÉ VIDÉO */}
+        <Section icon={Video} title="Qualité vidéo (recordings & replay)">
+          <div className="bg-[#181818] rounded-lg p-5 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Field icon={Cpu} label="Encoder">
+              <select
+                value={captureEncoder}
+                onChange={(e) => setCaptureEncoder(e.target.value)}
+                className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none"
+              >
+                {(["h264_nvenc","h264_amf","h264_qsv","h264_mf","libx264"] as EncoderId[]).map((id) => (
+                  <option key={id} value={id} disabled={availableEncoders.length > 0 && !availableEncoders.includes(id)}>
+                    {ENCODER_LABEL[id]}{availableEncoders.length > 0 && !availableEncoders.includes(id) ? " (non détecté)" : ""}
+                  </option>
+                ))}
+              </select>
+            </Field>
+
+            <Field icon={Film} label="FPS">
+              <select
+                value={captureFps}
+                onChange={(e) => setCaptureFps(parseInt(e.target.value, 10))}
+                className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none"
+              >
+                {FPS_OPTIONS.map((v) => <option key={v} value={v}>{v} fps</option>)}
+              </select>
+            </Field>
+
+            <Field icon={Gauge} label="Bitrate">
+              <select
+                value={captureBitrate}
+                onChange={(e) => setCaptureBitrate(parseInt(e.target.value, 10))}
+                className="w-full px-3 py-2 rounded bg-[#1f1f1f] border border-[#3a3a3a] focus:border-[#1ed760] text-white text-sm font-bold outline-none"
+              >
+                {BITRATE_OPTIONS.map((v) => <option key={v} value={v}>{(v / 1000).toFixed(0)} Mbps</option>)}
+              </select>
+            </Field>
+          </div>
+        </Section>
+
+        {/* CAPTURE — AUDIO */}
+        <Section icon={Mic} title="Audio des captures">
+          <div className="bg-[#181818] rounded-lg p-5">
+            <label className="flex items-center gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={captureAudio}
+                onChange={(e) => setCaptureAudio(e.target.checked)}
+                className="accent-[#1ed760] w-4 h-4"
+              />
+              {captureAudio ? <Mic className="w-4 h-4 text-[#1ed760]" /> : <MicOff className="w-4 h-4 text-[#b3b3b3]" />}
+              <span className="text-sm font-bold text-white">Capturer l'audio système avec les vidéos</span>
+            </label>
+            <p className="text-xs text-[#b3b3b3] mt-2 ml-7">
+              Nécessite <a href="https://github.com/rdp/screen-capture-recorder-to-video-windows-free" target="_blank" rel="noopener noreferrer" className="text-[#1ed760] hover:underline">Screen Capturer Recorder</a> installé (fournit le device <code className="font-mono">virtual-audio-capturer</code>). Sans ça, la vidéo est silencieuse.
+            </p>
+          </div>
+        </Section>
+
+        {/* CAPTURE — REPLAY BUFFER */}
+        <Section icon={Rewind} title="Replay buffer (style ShadowPlay)">
+          <div className="bg-[#181818] rounded-lg p-5">
+            <p className="text-xs text-[#b3b3b3] mb-4">
+              Quand activé, FFmpeg tourne en continu en arrière-plan et garde les <strong className="text-white">N dernières secondes</strong>. Appuie <Kbd>F11</Kbd> à n'importe quel moment pour sauver le clip de cette durée.
+            </p>
+            <div className="flex items-center gap-3 mb-4">
+              <span className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3] w-24">Durée</span>
+              <input
+                type="range"
+                min={10}
+                max={120}
+                step={5}
+                value={replaySeconds}
+                onChange={(e) => setReplaySeconds(parseInt(e.target.value, 10))}
+                disabled={replayEnabled}
+                className="flex-1 accent-[#1ed760] h-1.5 disabled:opacity-50"
+              />
+              <span className="font-mono font-bold text-white w-12 text-right">{replaySeconds}s</span>
+            </div>
+            <button
+              onClick={() => setReplayEnabled(!replayEnabled)}
+              className={`px-4 py-2 rounded-full text-[11px] font-bold uppercase transition-colors ${
+                replayEnabled ? "bg-[#1ed760] text-black" : "bg-[#1f1f1f] text-white hover:bg-[#252525]"
+              }`}
+              style={{ letterSpacing: "1.4px" }}
+            >
+              {replayEnabled ? "🟢 Buffer ON" : "Buffer OFF"}
+            </button>
+          </div>
+        </Section>
       </div>
     </>
+  );
+}
+
+function Field({ icon: Icon, label, children }: { icon: any; label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-[1.4px] font-bold text-[#b3b3b3] mb-1.5">
+        <Icon className="w-3 h-3" /> {label}
+      </div>
+      {children}
+    </div>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-block px-2 py-0.5 bg-[#1f1f1f] border border-[#3a3a3a] rounded font-mono text-[10px] font-bold text-[#1ed760]">{children}</span>
   );
 }
 

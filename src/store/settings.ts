@@ -1,5 +1,21 @@
 import { create } from "zustand";
+import { documentDir } from "@tauri-apps/api/path";
+import { mkdir, exists } from "@tauri-apps/plugin-fs";
 import { dbGetAllSettings, dbSetSetting } from "../lib/db";
+
+/** Returns the default captures folder under the user's Documents, creating it if missing. */
+async function ensureDefaultCaptureFolder(): Promise<string> {
+  try {
+    const docs = await documentDir();
+    const folder = `${docs.replace(/[\\/]+$/, "")}\\Gaming Config Trainer`;
+    const has = await exists(folder).catch(() => false);
+    if (!has) await mkdir(folder, { recursive: true }).catch(() => {});
+    return folder;
+  } catch (e) {
+    console.error("[settings] ensureDefaultCaptureFolder failed:", e);
+    return "";
+  }
+}
 
 export type Language = "en" | "fr";
 export type KeyboardLayout = "qwerty" | "qwertz" | "azerty";
@@ -39,8 +55,14 @@ interface SettingsState {
   aimSensitivity: number;
   crosshairShape: CrosshairShape;
   crosshairColor: string;
-  /** Default folder for screenshots / recordings (empty = ask each time via dialog) */
+  /** Default folder for screenshots / recordings */
   captureFolder: string;
+  /** Encoder used for video recordings */
+  captureEncoder: string;
+  /** FPS for video recordings */
+  captureFps: number;
+  /** Bitrate in kbps for video recordings */
+  captureBitrate: number;
   /** Capture system audio with recordings? */
   captureAudio: boolean;
   /** Replay buffer enabled? (background record for last-N-sec save) */
@@ -55,6 +77,9 @@ interface SettingsState {
   setCrosshairShape: (s: CrosshairShape) => Promise<void>;
   setCrosshairColor: (hex: string) => Promise<void>;
   setCaptureFolder: (path: string) => Promise<void>;
+  setCaptureEncoder: (id: string) => Promise<void>;
+  setCaptureFps: (n: number) => Promise<void>;
+  setCaptureBitrate: (kbps: number) => Promise<void>;
   setCaptureAudio: (on: boolean) => Promise<void>;
   setReplayEnabled: (on: boolean) => Promise<void>;
   setReplaySeconds: (n: number) => Promise<void>;
@@ -80,6 +105,9 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   crosshairShape: CROSSHAIR_DEFAULT_SHAPE,
   crosshairColor: CROSSHAIR_DEFAULT_COLOR,
   captureFolder: "",
+  captureEncoder: "h264_mf",
+  captureFps: 60,
+  captureBitrate: 12000,
   captureAudio: false,
   replayEnabled: false,
   replaySeconds: 30,
@@ -102,12 +130,30 @@ export const useSettings = create<SettingsState>()((set, get) => ({
       if (all.crosshairColor && isHex(all.crosshairColor)) {
         updates.crosshairColor = all.crosshairColor;
       }
-      if (typeof all.captureFolder === "string") updates.captureFolder = all.captureFolder;
+      if (typeof all.captureFolder === "string" && all.captureFolder.length > 0) {
+        updates.captureFolder = all.captureFolder;
+      } else {
+        // First-run: default to Documents\Gaming Config Trainer
+        const folder = await ensureDefaultCaptureFolder();
+        if (folder) {
+          updates.captureFolder = folder;
+          await dbSetSetting("captureFolder", folder).catch(() => {});
+        }
+      }
       if (all.captureAudio === "true") updates.captureAudio = true;
       if (all.replayEnabled === "true") updates.replayEnabled = true;
       if (all.replaySeconds) {
         const n = parseInt(all.replaySeconds, 10);
         if (Number.isFinite(n) && n >= 10 && n <= 120) updates.replaySeconds = n;
+      }
+      if (typeof all.captureEncoder === "string") updates.captureEncoder = all.captureEncoder;
+      if (all.captureFps) {
+        const n = parseInt(all.captureFps, 10);
+        if (Number.isFinite(n) && [30, 60, 120, 144].includes(n)) updates.captureFps = n;
+      }
+      if (all.captureBitrate) {
+        const n = parseInt(all.captureBitrate, 10);
+        if (Number.isFinite(n) && n > 0) updates.captureBitrate = n;
       }
       set(updates);
     } catch (e) {
@@ -149,9 +195,32 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   },
 
   setCaptureFolder: async (path) => {
-    set({ captureFolder: path });
-    try { await dbSetSetting("captureFolder", path); }
+    let finalPath = path;
+    // If user clears it, fall back to Documents default (auto-create)
+    if (!path || path.trim().length === 0) {
+      finalPath = await ensureDefaultCaptureFolder();
+    }
+    set({ captureFolder: finalPath });
+    try { await dbSetSetting("captureFolder", finalPath); }
     catch (e) { console.error("[settings] setCaptureFolder failed:", e); }
+  },
+
+  setCaptureEncoder: async (id) => {
+    set({ captureEncoder: id });
+    try { await dbSetSetting("captureEncoder", id); }
+    catch (e) { console.error("[settings] setCaptureEncoder failed:", e); }
+  },
+
+  setCaptureFps: async (n) => {
+    set({ captureFps: n });
+    try { await dbSetSetting("captureFps", String(n)); }
+    catch (e) { console.error("[settings] setCaptureFps failed:", e); }
+  },
+
+  setCaptureBitrate: async (kbps) => {
+    set({ captureBitrate: kbps });
+    try { await dbSetSetting("captureBitrate", String(kbps)); }
+    catch (e) { console.error("[settings] setCaptureBitrate failed:", e); }
   },
 
   setCaptureAudio: async (on) => {

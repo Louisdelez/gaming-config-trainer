@@ -4,7 +4,7 @@ import {
   Home, Settings, BarChart3, Crosshair,
   Timer, Grid3X3, Move, Zap, MousePointer2, Crosshair as CrosshairIcon,
   ChevronsLeftRight, Palette, Brain, ScanSearch,
-  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video,
+  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -116,6 +116,9 @@ export default function Sidebar() {
           <SectionLabel>{t("nav.capture")}</SectionLabel>
           <NavLink to="/capture" className={({ isActive }) => navItem(isActive)}>
             <Video className="w-5 h-5" /> {t("nav.capture")}
+          </NavLink>
+          <NavLink to="/library" className={({ isActive }) => navItem(isActive)}>
+            <Library className="w-5 h-5" /> {t("nav.library")}
           </NavLink>
         </nav>
 
