@@ -29,7 +29,7 @@ export default function PlayerBar() {
   const VolumeIcon = volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   return (
-    <div className="h-[88px] shrink-0 bg-black border-t border-white/[0.06] px-4 flex items-center gap-4 select-none">
+    <div className="h-[88px] shrink-0 bg-black border-t border-white/[0.06] pl-4 pr-6 flex items-center gap-4 select-none">
       {/* LEFT — Current track info */}
       <div className="flex items-center gap-3 w-[28%] min-w-[180px]">
         <div className="w-14 h-14 rounded bg-[#282828] flex items-center justify-center shrink-0">
@@ -119,7 +119,7 @@ export default function PlayerBar() {
       </div>
 
       {/* RIGHT — Volume + queue toggle */}
-      <div className="flex items-center gap-3 w-[28%] min-w-[180px] justify-end">
+      <div className="flex items-center gap-3 w-[28%] min-w-[180px] justify-end pr-2">
         <button
           onClick={togglePanel}
           title="Affichage en cours de lecture"

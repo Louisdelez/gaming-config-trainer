@@ -1350,7 +1350,7 @@ dependencies = [
 
 [[package]]
 name = "gaming-config-trainer"
-version = "0.1.12"
+version = "0.1.13"
 dependencies = [
  "serde",
  "serde_json",

@@ -38,7 +38,7 @@ export default function Sidebar() {
   const { t } = useTranslation();
 
   return (
-    <aside className="w-64 shrink-0 h-screen sticky top-0 bg-black flex flex-col">
+    <aside className="w-64 shrink-0 h-full bg-black flex flex-col">
       {/* Logo */}
       <div className="px-6 py-5">
         <div className="flex items-center gap-2.5">
