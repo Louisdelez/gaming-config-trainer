@@ -28,7 +28,9 @@
     "monitorhz": "Monitor Hz",
     "network": "Speed Test",
     "capture": "Capture",
-    "library": "Library"
+    "library": "Library",
+    "music": "Music",
+    "musicLibrary": "Music library"
   },
   "settings": {
     "title": "Settings",

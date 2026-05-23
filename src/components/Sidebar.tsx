@@ -4,7 +4,7 @@ import {
   Home, Settings, BarChart3, Crosshair,
   Timer, Grid3X3, Move, Zap, MousePointer2, Crosshair as CrosshairIcon,
   ChevronsLeftRight, Palette, Brain, ScanSearch,
-  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library,
+  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library, Music,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -119,6 +119,11 @@ export default function Sidebar() {
           </NavLink>
           <NavLink to="/library" className={({ isActive }) => navItem(isActive)}>
             <Library className="w-5 h-5" /> {t("nav.library")}
+          </NavLink>
+
+          <SectionLabel>{t("nav.music")}</SectionLabel>
+          <NavLink to="/music" className={({ isActive }) => navItem(isActive)}>
+            <Music className="w-5 h-5" /> {t("nav.musicLibrary")}
           </NavLink>
         </nav>
 

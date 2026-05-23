@@ -28,7 +28,9 @@
     "monitorhz": "Hz Moniteur",
     "network": "Speed Test",
     "capture": "Capture",
-    "library": "Bibliothèque"
+    "library": "Bibliothèque",
+    "music": "Musique",
+    "musicLibrary": "Bibliothèque audio"
   },
   "settings": {
     "title": "Paramètres",

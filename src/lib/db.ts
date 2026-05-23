@@ -164,6 +164,42 @@ export async function dbDeleteCapture(id: number) {
   await db.execute("DELETE FROM captures WHERE id = $1", [id]);
 }
 
+/* ---------- TRACKS (music library) ---------- */
+export interface DbTrackRow {
+  id: number;
+  path: string;
+  title: string;
+  artist: string | null;
+  duration_sec: number | null;
+  added_at: number;
+}
+
+export async function dbListTracks(): Promise<DbTrackRow[]> {
+  const db = await getDb();
+  return db.select<DbTrackRow[]>("SELECT * FROM tracks ORDER BY added_at DESC");
+}
+
+export async function dbInsertTrack(t: { path: string; title: string; artist?: string | null; duration_sec?: number | null }): Promise<number | null> {
+  const db = await getDb();
+  // Use INSERT OR IGNORE since path is UNIQUE
+  await db.execute(
+    "INSERT OR IGNORE INTO tracks (path, title, artist, duration_sec, added_at) VALUES ($1, $2, $3, $4, $5)",
+    [t.path, t.title, t.artist ?? null, t.duration_sec ?? null, Date.now()]
+  );
+  const rows = await db.select<{ id: number }[]>("SELECT id FROM tracks WHERE path = $1", [t.path]);
+  return rows[0]?.id ?? null;
+}
+
+export async function dbUpdateTrackDuration(id: number, duration_sec: number) {
+  const db = await getDb();
+  await db.execute("UPDATE tracks SET duration_sec = $1 WHERE id = $2", [duration_sec, id]);
+}
+
+export async function dbDeleteTrack(id: number) {
+  const db = await getDb();
+  await db.execute("DELETE FROM tracks WHERE id = $1", [id]);
+}
+
 /* ---------- SETTINGS (key/value) ---------- */
 export async function dbGetSetting(key: string): Promise<string | null> {
   const db = await getDb();

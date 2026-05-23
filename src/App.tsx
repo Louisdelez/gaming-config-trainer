@@ -27,8 +27,38 @@ import MonitorHz from "./pages/hardware/MonitorHz";
 import NetworkTest from "./pages/hardware/Network";
 import Capture from "./pages/Capture";
 import Library from "./pages/Library";
+import Music from "./pages/Music";
 import Info from "./pages/Info";
 import Scores from "./pages/Scores";
+import { usePlayer } from "./store/player";
+import { startAudioEngine } from "./lib/audioEngine";
+import { exists } from "@tauri-apps/plugin-fs";
+
+/** Pre-load the 3 test MP3s on first boot (only if they exist on disk) */
+const TEST_TRACKS = [
+  "C:\\Users\\loicd\\Downloads\\Chuis trop fort (I'm cracked, I'm cracke.mp3",
+  "C:\\Users\\loicd\\Downloads\\I'm alive, nah I ain't dead.mp3",
+  "C:\\Users\\loicd\\Downloads\\Un jour, j’serai MVP.mp3",
+];
+
+async function loadTestTracksOnFirstRun() {
+  const flag = "gct-music-test-loaded";
+  if (localStorage.getItem(flag) === "true") return;
+  const player = usePlayer.getState();
+  let added = 0;
+  for (const p of TEST_TRACKS) {
+    try {
+      const has = await exists(p).catch(() => false);
+      if (!has) continue;
+      await player.addTrackFromPath(p);
+      added++;
+    } catch (e) {
+      console.error("[App] failed to add test track:", p, e);
+    }
+  }
+  localStorage.setItem(flag, "true");
+  console.log(`[App] pre-loaded ${added} test tracks`);
+}
 
 function App() {
   const { i18n } = useTranslation();
@@ -36,6 +66,7 @@ function App() {
   const hydrateSettings = useSettings((s) => s.hydrate);
   const hydrateProfiles = useProfiles((s) => s.hydrate);
   const hydrateScores = useScores((s) => s.hydrate);
+  const hydratePlayer = usePlayer((s) => s.hydrate);
 
   // Boot: migrate localStorage → SQLite (one-time) then hydrate all stores
   useEffect(() => {
@@ -49,9 +80,14 @@ function App() {
         hydrateSettings(),
         hydrateProfiles(),
         hydrateScores(),
+        hydratePlayer(),
       ]);
+      // Pre-load test tracks once player store is hydrated
+      await loadTestTracksOnFirstRun();
+      // Start the audio engine (singleton subscriber)
+      startAudioEngine();
     })();
-  }, [hydrateSettings, hydrateProfiles, hydrateScores]);
+  }, [hydrateSettings, hydrateProfiles, hydrateScores, hydratePlayer]);
 
   useEffect(() => {
     if (i18n.language !== language) {
@@ -84,6 +120,7 @@ function App() {
         <Route path="/hardware/network" element={<NetworkTest />} />
         <Route path="/capture" element={<Capture />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/music" element={<Music />} />
         <Route path="/info/:slug" element={<Info />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
