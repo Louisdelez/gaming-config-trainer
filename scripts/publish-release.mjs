@@ -28,7 +28,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
 const OWNER = "Louisdelez";
-const REPO  = "gaming-config-trainer";
+const REPO  = "pulse";
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));

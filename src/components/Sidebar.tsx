@@ -9,7 +9,7 @@ import {
 import pulseIcon from "../assets/brand/pulse-icon-64.png";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
-const REPO_URL = "https://github.com/Louisdelez/gaming-config-trainer";
+const REPO_URL = "https://github.com/Louisdelez/pulse";
 
 /** Inline GitHub mark (Octicons-style) — lucide v1.16 doesn't expose Github */
 function GithubIcon({ className }: { className?: string }) {

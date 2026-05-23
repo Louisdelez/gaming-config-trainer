@@ -1,18 +1,23 @@
 {
-  "name": "gaming-config-trainer",
+  "name": "pulse",
   "private": true,
-  "version": "0.2.1",
-  "description": "Pulse â€” Feel the game. Gaming companion all-in-one: configs, aim trainers, hardware tests, screen capture, music player.",
+  "version": "0.2.2",
+  "description": "Pulse — Feel the game. Tauri 2 + React desktop app for gamers: pro game configs, aim trainers, hardware tests, screen capture with hardware-accelerated recording, music player, signed auto-update.",
   "license": "MIT",
-  "author": "Louisdelez",
+  "author": "Louisdelez <loicdelez.ch@gmail.com>",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Louisdelez/gaming-config-trainer.git"
+    "url": "https://github.com/Louisdelez/pulse.git"
   },
-  "homepage": "https://github.com/Louisdelez/gaming-config-trainer#readme",
+  "homepage": "https://github.com/Louisdelez/pulse#readme",
   "bugs": {
-    "url": "https://github.com/Louisdelez/gaming-config-trainer/issues"
+    "url": "https://github.com/Louisdelez/pulse/issues"
   },
+  "keywords": [
+    "gaming", "tauri", "react", "valorant", "fortnite", "league-of-legends",
+    "aim-trainer", "screen-recorder", "ffmpeg", "music-player",
+    "auto-update", "windows", "spotify-design"
+  ],
   "type": "module",
   "scripts": {
     "dev": "vite",
