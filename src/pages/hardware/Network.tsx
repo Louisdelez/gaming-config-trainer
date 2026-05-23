@@ -93,7 +93,7 @@ export default function NetworkTest() {
         icon={NetworkIcon}
         title="Speed Test"
         subtitle="Latence, jitter, packet loss vers les principaux serveurs de jeu"
-      />
+      infoSlug="network" />
 
       {/* CONTROLS */}
       <div className="bg-[#181818] rounded-xl p-5 mb-6 flex items-center gap-4 flex-wrap">

@@ -27,6 +27,7 @@ import MonitorHz from "./pages/hardware/MonitorHz";
 import NetworkTest from "./pages/hardware/Network";
 import Capture from "./pages/Capture";
 import Library from "./pages/Library";
+import Info from "./pages/Info";
 import Scores from "./pages/Scores";
 
 function App() {
@@ -83,6 +84,7 @@ function App() {
         <Route path="/hardware/network" element={<NetworkTest />} />
         <Route path="/capture" element={<Capture />} />
         <Route path="/library" element={<Library />} />
+        <Route path="/info/:slug" element={<Info />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

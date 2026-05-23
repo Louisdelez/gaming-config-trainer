@@ -14,10 +14,12 @@ interface Props {
   currentScore?: number | null;
   children: ReactNode;
   accent?: string;
+  /** Slug for /info/<slug> help page (default: same as gameKey) */
+  infoSlug?: string;
 }
 
 export default function GameShell({
-  icon, title, description, gameKey, unit, currentScore, children,
+  icon, title, description, gameKey, unit, currentScore, children, infoSlug,
 }: Props) {
   const { t } = useTranslation();
   const best = useScores((s) => s.getBest(gameKey));
@@ -26,7 +28,7 @@ export default function GameShell({
 
   return (
     <>
-      <PageHeader icon={icon} title={title} subtitle={description} />
+      <PageHeader icon={icon} title={title} subtitle={description} infoSlug={infoSlug ?? gameKey} />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <MiniStat icon={Activity} label={t("games.score")} value={currentScore != null ? currentScore.toFixed(0) : "-"} unit={unit} accent="text-white" />
