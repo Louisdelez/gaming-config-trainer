@@ -4,8 +4,9 @@ import {
   Home, Settings, BarChart3,
   Timer, Grid3X3, Move, Zap, MousePointer2, Crosshair as CrosshairIcon,
   ChevronsLeftRight, Palette, Brain, ScanSearch,
-  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library, Music, Activity,
+  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library, Music,
 } from "lucide-react";
+import pulseIcon from "../assets/brand/pulse-icon-64.png";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
 const REPO_URL = "https://github.com/Louisdelez/gaming-config-trainer";
@@ -42,9 +43,7 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 py-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-full bg-[#1ed760] flex items-center justify-center shadow-spotify">
-            <Activity className="w-5 h-5 text-black" strokeWidth={3} />
-          </div>
+          <img src={pulseIcon} alt="Pulse" className="w-9 h-9 object-contain" style={{ filter: "drop-shadow(0 0 6px rgba(30, 215, 96, 0.4))" }} />
           <div>
             <div className="font-extrabold text-lg text-white tracking-tight leading-none">{t("app.title")}</div>
             <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#1ed760] mt-0.5">{t("app.subtitle")}</div>

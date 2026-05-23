@@ -1,6 +1,12 @@
+<div align="center">
+
+![Pulse](branding/hero-source.png)
+
 # Pulse
 
-> Feel the game.
+### *Feel the game.*
+
+</div>
 
 Gaming companion all-in-one pour Windows. Conçu pour **Valorant**, **Fortnite** et **League of Legends** mais utile bien au-delà.
 
