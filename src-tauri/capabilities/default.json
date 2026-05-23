@@ -57,6 +57,13 @@
     "global-shortcut:allow-register",
     "global-shortcut:allow-unregister",
     "global-shortcut:allow-is-registered",
-    "global-shortcut:allow-unregister-all"
+    "global-shortcut:allow-unregister-all",
+    "updater:default",
+    "updater:allow-check",
+    "updater:allow-download-and-install",
+    "updater:allow-download",
+    "updater:allow-install",
+    "process:default",
+    "process:allow-restart"
   ]
 }
