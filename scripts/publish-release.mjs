@@ -54,14 +54,17 @@ async function main() {
   const nsisDir = path.join(releaseRoot, "bundle/nsis");
   const msiDir  = path.join(releaseRoot, "bundle/msi");
 
-  const setupRegex = new RegExp(`Gaming Config Trainer_${version}_x64-setup\\.exe$`);
-  const setupSigRegex = new RegExp(`Gaming Config Trainer_${version}_x64-setup\\.exe\\.sig$`);
-  const msiRegex = new RegExp(`Gaming Config Trainer_${version}_x64_en-US\\.msi$`);
+  const setupRegex = new RegExp(`Pulse_${version}_x64-setup\\.exe$`);
+  const setupSigRegex = new RegExp(`Pulse_${version}_x64-setup\\.exe\\.sig$`);
+  const msiRegex = new RegExp(`Pulse_${version}_x64_en-US\\.msi$`);
 
   const setupExe = findFile(nsisDir, setupRegex);
   const setupSig = findFile(nsisDir, setupSigRegex);
   const msi      = findFile(msiDir,  msiRegex);
-  const portable = path.join(releaseRoot, "gaming-config-trainer.exe");
+  // Main exe filename derives from productName "Pulse" → "Pulse.exe"
+  const portable = fs.existsSync(path.join(releaseRoot, "Pulse.exe"))
+    ? path.join(releaseRoot, "Pulse.exe")
+    : path.join(releaseRoot, "pulse.exe");
   const ffmpeg   = path.join(releaseRoot, "ffmpeg.exe");
 
   if (!setupExe) throw new Error(`NSIS setup not found in ${nsisDir} (run npm run tauri build first)`);
@@ -92,7 +95,7 @@ async function main() {
     .split("\n").filter(Boolean).slice(0, 20).join("\n");
 
   // Build the manifest
-  const setupUrl = `https://github.com/${OWNER}/${REPO}/releases/download/${tag}/GamingConfigTrainer-${version}-setup.exe`;
+  const setupUrl = `https://github.com/${OWNER}/${REPO}/releases/download/${tag}/Pulse-${version}-setup.exe`;
   const manifest = {
     version,
     notes: plainBody,
@@ -111,10 +114,10 @@ async function main() {
   fs.writeFileSync(path.join(stage, "latest.json"), JSON.stringify(manifest, null, 2));
 
   // Copy artifacts with clean filenames
-  const stageSetup    = path.join(stage, `GamingConfigTrainer-${version}-setup.exe`);
-  const stageSetupSig = path.join(stage, `GamingConfigTrainer-${version}-setup.exe.sig`);
-  const stageMsi      = msi      ? path.join(stage, `GamingConfigTrainer-${version}.msi`)             : null;
-  const stagePortable = path.join(stage, `GamingConfigTrainer-${version}-portable.zip`);
+  const stageSetup    = path.join(stage, `Pulse-${version}-setup.exe`);
+  const stageSetupSig = path.join(stage, `Pulse-${version}-setup.exe.sig`);
+  const stageMsi      = msi      ? path.join(stage, `Pulse-${version}.msi`)             : null;
+  const stagePortable = path.join(stage, `Pulse-${version}-portable.zip`);
 
   fs.copyFileSync(setupExe, stageSetup);
   fs.copyFileSync(setupSig, stageSetupSig);

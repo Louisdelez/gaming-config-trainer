@@ -1,8 +1,8 @@
 {
   "name": "gaming-config-trainer",
   "private": true,
-  "version": "0.1.13",
-  "description": "Gaming setup optimizer + aim trainers + speed test for Valorant, Fortnite & League of Legends.",
+  "version": "0.2.0",
+  "description": "Pulse — Feel the game. Gaming companion all-in-one: configs, aim trainers, hardware tests, screen capture, music player.",
   "license": "MIT",
   "author": "Louisdelez",
   "repository": {

@@ -1,24 +1,28 @@
-# Gaming Config Trainer
+# Pulse
 
-> Optimise ton setup. Entraîne tes réflexes.
+> Feel the game.
 
-Application desktop tout-en-un pour **Valorant**, **Fortnite** et **League of Legends** :
-- 🎯 **Configs pro** : keybinds, sensibilité, crosshair, graphismes, audio (avec profils personnalisables)
-- 🎮 **10 mini-jeux** d'aim training (Reaction Time, Gridshot, Tracking, Flickshot, CPS, Microshots, Strafe, Stroop, Sequence, Visual Match)
-- 🔧 **4 tests hardware** : Polling Rate, Click Latency, Monitor Hz, Speed Test gaming
-- 💾 **Profils sauvegardés** dans SQLite local (multi-profils par jeu)
-- 📤 **Export/Import** des configs en HTML / PDF / PNG / TXT / MD
-- 🌍 **Multi-langue** FR/EN + **3 layouts clavier** (QWERTY / QWERTZ / AZERTY)
+Gaming companion all-in-one pour Windows. Conçu pour **Valorant**, **Fortnite** et **League of Legends** mais utile bien au-delà.
+
+- 🎯 **Configs pro** par jeu : keybinds, sensibilité, crosshair, graphismes, audio (multi-profils SQLite)
+- 🎮 **10 aim trainers** avec Pointer Lock + crosshair custom (Reaction, Gridshot, Tracking, Flickshot, CPS, Microshots, Strafe, Stroop, Sequence, VisualMatch)
+- 🔧 **4 hardware tests** : Polling Rate, Click Latency, Monitor Hz, Speed Test gaming (23 serveurs)
+- 📹 **Screen capture** : screenshot + recording MP4 (NVENC/AMF/QSV) + replay buffer style ShadowPlay
+- ⌨️ **Hotkeys globaux** configurables (marchent en jeu)
+- 🎵 **Music player** Spotify-style intégré (bottom bar + queue panel)
+- 📤 **Export/Import** configs en HTML / PDF / PNG / TXT / MD
+- 🔄 **Auto-update** signé minisign + manifest GitHub Releases
+- 🌍 **Multi-langue** FR/EN + **3 layouts clavier** (QWERTY/QWERTZ/AZERTY)
 
 ## 📥 Installation
 
 ### Option 1 — Installer (recommandé)
-1. Télécharge `GamingConfigTrainer-Setup.exe` depuis la dernière [Release](../../releases/latest)
+1. Télécharge `Pulse-Setup.exe` depuis la dernière [Release](../../releases/latest)
 2. Double-clic → l'installer télécharge WebView2 si nécessaire + installe l'app
 3. Lancer depuis le menu Démarrer
 
 ### Option 2 — Portable
-1. Télécharge `GamingConfigTrainer.exe` depuis la [Release](../../releases/latest)
+1. Télécharge `Pulse.exe` depuis la [Release](../../releases/latest)
 2. Pose-le où tu veux et double-clic
 
 > ⚠️ Au premier lancement, Windows SmartScreen peut afficher un avertissement (l'app n'est pas signée). Click "Informations complémentaires" → "Exécuter quand même".

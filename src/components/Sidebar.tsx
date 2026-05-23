@@ -1,10 +1,10 @@
 import { NavLink } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
-  Home, Settings, BarChart3, Crosshair,
+  Home, Settings, BarChart3,
   Timer, Grid3X3, Move, Zap, MousePointer2, Crosshair as CrosshairIcon,
   ChevronsLeftRight, Palette, Brain, ScanSearch,
-  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library, Music,
+  Gauge, MousePointerClick, Monitor, Wifi, ExternalLink, Video, Library, Music, Activity,
 } from "lucide-react";
 import { openUrl } from "@tauri-apps/plugin-opener";
 
@@ -42,10 +42,13 @@ export default function Sidebar() {
       {/* Logo */}
       <div className="px-6 py-5">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-full bg-[#1ed760] flex items-center justify-center">
-            <Crosshair className="w-4 h-4 text-black" strokeWidth={3} />
+          <div className="w-9 h-9 rounded-full bg-[#1ed760] flex items-center justify-center shadow-spotify">
+            <Activity className="w-5 h-5 text-black" strokeWidth={3} />
           </div>
-          <div className="font-bold text-base text-white tracking-tight">{t("app.title")}</div>
+          <div>
+            <div className="font-extrabold text-lg text-white tracking-tight leading-none">{t("app.title")}</div>
+            <div className="text-[10px] uppercase tracking-[1.4px] font-bold text-[#1ed760] mt-0.5">{t("app.subtitle")}</div>
+          </div>
         </div>
       </div>
 
