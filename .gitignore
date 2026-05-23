@@ -43,3 +43,9 @@ Desktop.ini
 
 # Release staging (artifacts uploaded to GitHub Releases)
 release-stage/
+
+# FFmpeg sidecar (auto-downloaded by `npm install` via scripts/download-ffmpeg.mjs)
+src-tauri/binaries/*.exe
+src-tauri/binaries/.ffmpeg.version
+src-tauri/binaries/_ffmpeg.zip
+src-tauri/binaries/_extract/

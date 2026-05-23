@@ -42,10 +42,19 @@ Application desktop tout-en-un pour **Valorant**, **Fortnite** et **League of Le
 
 ```bash
 # Prérequis : Node 20+ et Rust 1.70+
-npm install
+npm install            # déclenche aussi le download de FFmpeg (postinstall)
 npm run tauri dev      # dev mode (hot reload)
 npm run tauri build    # build production (.exe + installer)
 ```
+
+### FFmpeg auto-download
+
+Le binaire **FFmpeg** (~97 MB) n'est **pas dans le repo** — il est téléchargé automatiquement par `npm install` via le script `scripts/download-ffmpeg.mjs` :
+- Version pinnée : **gyan.dev essentials 7.1**
+- Idempotent (skip si déjà présent au bon hash)
+- Forcer re-download : `npm run fetch-ffmpeg`
+
+Cette approche garde le repo léger (~150 MB → quelques MB) tout en livrant un installer **autonome** avec FFmpeg bundled à chaque release.
 
 ## 📂 Structure
 
