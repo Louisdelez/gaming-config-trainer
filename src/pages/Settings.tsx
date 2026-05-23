@@ -1,14 +1,16 @@
 import { useEffect, useState } from "react";
 import {
   Settings as SettingsIcon, Languages, Keyboard, Crosshair, RotateCcw, Palette, Check,
-  Video, Folder, Mic, MicOff, Rewind, Cpu, Film, Gauge,
+  Video, Folder, Mic, MicOff, Rewind, Cpu, Film, Gauge, Keyboard as KeyboardIcon,
 } from "lucide-react";
+import HotkeyInput from "../components/HotkeyInput";
 import { useTranslation } from "react-i18next";
 import { open as openDialog } from "@tauri-apps/plugin-dialog";
 import {
   useSettings, type Language, type KeyboardLayout, type CrosshairShape,
   AIM_SENS_MIN, AIM_SENS_MAX, AIM_SENS_DEFAULT,
   CROSSHAIR_SHAPES, CROSSHAIR_COLOR_PRESETS,
+  HOTKEY_SCREENSHOT_DEFAULT, HOTKEY_RECORD_DEFAULT, HOTKEY_REPLAY_DEFAULT,
 } from "../store/settings";
 import { useActiveProfile, type ValorantProfile, type FortniteProfile, type LolProfile } from "../store/profiles";
 import { aimSensFromValorant, aimSensFromFortnite, aimSensFromLol } from "../lib/aimPresets";
@@ -57,6 +59,12 @@ export default function Settings() {
   const setCaptureAudio   = useSettings((s) => s.setCaptureAudio);
   const setReplayEnabled  = useSettings((s) => s.setReplayEnabled);
   const setReplaySeconds  = useSettings((s) => s.setReplaySeconds);
+  const hotkeyScreenshot  = useSettings((s) => s.hotkeyScreenshot);
+  const hotkeyRecord      = useSettings((s) => s.hotkeyRecord);
+  const hotkeyReplay      = useSettings((s) => s.hotkeyReplay);
+  const setHotkeyScreenshot = useSettings((s) => s.setHotkeyScreenshot);
+  const setHotkeyRecord     = useSettings((s) => s.setHotkeyRecord);
+  const setHotkeyReplay     = useSettings((s) => s.setHotkeyReplay);
 
   // Available encoders
   const [availableEncoders, setAvailableEncoders] = useState<EncoderId[]>([]);
@@ -378,6 +386,38 @@ export default function Settings() {
           </div>
         </Section>
 
+        {/* CAPTURE — HOTKEYS */}
+        <Section icon={KeyboardIcon} title="Raccourcis clavier (hotkeys capture)">
+          <div className="bg-[#181818] rounded-lg p-5">
+            <p className="text-xs text-[#b3b3b3] mb-4">
+              Touches globales qui marchent <strong className="text-white">même quand le jeu est focus</strong> (Valorant lancé, fullscreen, etc.). Click sur une touche puis appuie sur la combinaison souhaitée (ex: <Kbd>F9</Kbd>, <Kbd>Ctrl+Shift+S</Kbd>). <Kbd>Échap</Kbd> pour annuler.
+            </p>
+            <div className="space-y-3">
+              <HotkeyRow
+                label="Screenshot"
+                value={hotkeyScreenshot}
+                defaultValue={HOTKEY_SCREENSHOT_DEFAULT}
+                onChange={setHotkeyScreenshot}
+                conflictsWith={[hotkeyRecord, hotkeyReplay]}
+              />
+              <HotkeyRow
+                label="Démarrer / Arrêter enregistrement"
+                value={hotkeyRecord}
+                defaultValue={HOTKEY_RECORD_DEFAULT}
+                onChange={setHotkeyRecord}
+                conflictsWith={[hotkeyScreenshot, hotkeyReplay]}
+              />
+              <HotkeyRow
+                label="Sauver clip replay buffer"
+                value={hotkeyReplay}
+                defaultValue={HOTKEY_REPLAY_DEFAULT}
+                onChange={setHotkeyReplay}
+                conflictsWith={[hotkeyScreenshot, hotkeyRecord]}
+              />
+            </div>
+          </div>
+        </Section>
+
         {/* CAPTURE — REPLAY BUFFER */}
         <Section icon={Rewind} title="Replay buffer (style ShadowPlay)">
           <div className="bg-[#181818] rounded-lg p-5">
@@ -411,6 +451,22 @@ export default function Settings() {
         </Section>
       </div>
     </>
+  );
+}
+
+function HotkeyRow({ label, value, defaultValue, onChange, conflictsWith }: {
+  label: string; value: string; defaultValue: string; onChange: (v: string) => Promise<void>; conflictsWith: string[];
+}) {
+  return (
+    <div className="flex items-center justify-between gap-4 py-1">
+      <span className="text-sm text-white font-bold flex-1">{label}</span>
+      <HotkeyInput
+        value={value}
+        defaultValue={defaultValue}
+        onChange={(v) => { onChange(v); }}
+        conflictsWith={conflictsWith.filter((c) => c !== value)}
+      />
+    </div>
   );
 }
 

@@ -10,8 +10,7 @@ import {
   type EncoderId, type RecordingHandle, type ReplayBufferHandle,
 } from "../lib/capture";
 import {
-  registerCaptureHotkeys, unregisterCaptureHotkeys,
-  HOTKEY_SCREENSHOT, HOTKEY_RECORD, HOTKEY_REPLAY,
+  registerCaptureHotkeys, unregisterCaptureHotkeys, prettyAccelerator,
 } from "../lib/hotkeys";
 
 type Status =
@@ -36,6 +35,9 @@ export default function Capture() {
   const captureEncoder = useSettings((s) => s.captureEncoder);
   const captureFps     = useSettings((s) => s.captureFps);
   const captureBitrate = useSettings((s) => s.captureBitrate);
+  const hotkeyScreenshot = useSettings((s) => s.hotkeyScreenshot);
+  const hotkeyRecord     = useSettings((s) => s.hotkeyRecord);
+  const hotkeyReplay     = useSettings((s) => s.hotkeyReplay);
   const setReplayEnabled = useSettings((s) => s.setReplayEnabled);
 
   const [status, setStatus] = useState<Status>({ kind: "idle" });
@@ -175,15 +177,22 @@ export default function Capture() {
     }
   }, []);
 
-  /* ---------- Hotkeys ---------- */
+  /* ---------- Hotkeys (re-registered when bindings change) ---------- */
   useEffect(() => {
-    registerCaptureHotkeys({
-      onScreenshot: handleScreenshot,
-      onRecordToggle: toggleRecord,
-      onReplay: saveReplay,
-    });
+    registerCaptureHotkeys(
+      {
+        onScreenshot: handleScreenshot,
+        onRecordToggle: toggleRecord,
+        onReplay: saveReplay,
+      },
+      {
+        screenshot: hotkeyScreenshot,
+        record: hotkeyRecord,
+        replay: hotkeyReplay,
+      },
+    );
     return () => { unregisterCaptureHotkeys(); };
-  }, [handleScreenshot, toggleRecord, saveReplay]);
+  }, [handleScreenshot, toggleRecord, saveReplay, hotkeyScreenshot, hotkeyRecord, hotkeyReplay]);
 
   /* ---------- Sync replayEnabled with actual buffer state ---------- */
   useEffect(() => {
@@ -214,7 +223,7 @@ export default function Capture() {
         <ActionCard
           icon={Camera}
           title="Screenshot"
-          subtitle={`Hotkey ${HOTKEY_SCREENSHOT}`}
+          subtitle={`Hotkey ${prettyAccelerator(hotkeyScreenshot)}`}
           desc="PNG plein écran, qualité max."
           buttonLabel="Capturer"
           onClick={handleScreenshot}
@@ -224,7 +233,7 @@ export default function Capture() {
         <ActionCard
           icon={Video}
           title="Enregistrement"
-          subtitle={`Hotkey ${HOTKEY_RECORD}`}
+          subtitle={`Hotkey ${prettyAccelerator(hotkeyRecord)}`}
           desc={recording
             ? `🔴 REC • ${formatElapsed(elapsed)} • ${ENCODER_LABEL[captureEncoder as EncoderId] ?? captureEncoder}`
             : `${ENCODER_LABEL[captureEncoder as EncoderId] ?? captureEncoder} • ${captureFps} FPS • ${captureBitrate / 1000} Mbps`}
@@ -237,9 +246,9 @@ export default function Capture() {
         <ActionCard
           icon={Rewind}
           title="Replay buffer"
-          subtitle={`Hotkey ${HOTKEY_REPLAY}`}
+          subtitle={`Hotkey ${prettyAccelerator(hotkeyReplay)}`}
           desc={replayActive
-            ? `🟢 Actif (last ${replaySeconds}s) • ${HOTKEY_REPLAY} pour sauver`
+            ? `🟢 Actif (last ${replaySeconds}s) • ${prettyAccelerator(hotkeyReplay)} pour sauver`
             : `Style ShadowPlay • garde les ${replaySeconds}s dernières`}
           buttonLabel={replayActive ? "Sauver clip" : "Activer"}
           onClick={replayActive ? saveReplay : () => setReplayEnabled(true)}
@@ -254,9 +263,12 @@ export default function Capture() {
         <div className="text-xs">
           <div className="text-[#1ed760] font-bold mb-1">Hotkeys globaux (actifs même quand le jeu a le focus)</div>
           <div className="text-white space-x-3">
-            <Kbd>{HOTKEY_SCREENSHOT}</Kbd> Screenshot
-            <Kbd>{HOTKEY_RECORD}</Kbd> Start/Stop record
-            <Kbd>{HOTKEY_REPLAY}</Kbd> Save replay
+            <Kbd>{prettyAccelerator(hotkeyScreenshot)}</Kbd> Screenshot
+            <Kbd>{prettyAccelerator(hotkeyRecord)}</Kbd> Start/Stop record
+            <Kbd>{prettyAccelerator(hotkeyReplay)}</Kbd> Save replay
+          </div>
+          <div className="text-[10px] text-[#b3b3b3] mt-1">
+            Configure-les dans <Link to="/settings" className="text-[#1ed760] hover:underline">Paramètres → Raccourcis clavier</Link>
           </div>
         </div>
       </div>

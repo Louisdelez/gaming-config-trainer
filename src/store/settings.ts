@@ -69,6 +69,10 @@ interface SettingsState {
   replayEnabled: boolean;
   /** Replay buffer length in seconds (10–120) */
   replaySeconds: number;
+  /** Global hotkey accelerators (Tauri format, e.g. "F9", "Ctrl+Shift+S") */
+  hotkeyScreenshot: string;
+  hotkeyRecord: string;
+  hotkeyReplay: string;
   loaded: boolean;
   hydrate: () => Promise<void>;
   setLanguage: (lang: Language) => Promise<void>;
@@ -83,7 +87,14 @@ interface SettingsState {
   setCaptureAudio: (on: boolean) => Promise<void>;
   setReplayEnabled: (on: boolean) => Promise<void>;
   setReplaySeconds: (n: number) => Promise<void>;
+  setHotkeyScreenshot: (s: string) => Promise<void>;
+  setHotkeyRecord: (s: string) => Promise<void>;
+  setHotkeyReplay: (s: string) => Promise<void>;
 }
+
+export const HOTKEY_SCREENSHOT_DEFAULT = "F10";
+export const HOTKEY_RECORD_DEFAULT     = "F9";
+export const HOTKEY_REPLAY_DEFAULT     = "F11";
 
 function clampSens(v: number): number {
   if (!Number.isFinite(v)) return AIM_SENS_DEFAULT;
@@ -111,6 +122,9 @@ export const useSettings = create<SettingsState>()((set, get) => ({
   captureAudio: false,
   replayEnabled: false,
   replaySeconds: 30,
+  hotkeyScreenshot: HOTKEY_SCREENSHOT_DEFAULT,
+  hotkeyRecord: HOTKEY_RECORD_DEFAULT,
+  hotkeyReplay: HOTKEY_REPLAY_DEFAULT,
   loaded: false,
 
   hydrate: async () => {
@@ -155,6 +169,9 @@ export const useSettings = create<SettingsState>()((set, get) => ({
         const n = parseInt(all.captureBitrate, 10);
         if (Number.isFinite(n) && n > 0) updates.captureBitrate = n;
       }
+      if (typeof all.hotkeyScreenshot === "string" && all.hotkeyScreenshot.length > 0) updates.hotkeyScreenshot = all.hotkeyScreenshot;
+      if (typeof all.hotkeyRecord === "string"     && all.hotkeyRecord.length > 0)     updates.hotkeyRecord     = all.hotkeyRecord;
+      if (typeof all.hotkeyReplay === "string"     && all.hotkeyReplay.length > 0)     updates.hotkeyReplay     = all.hotkeyReplay;
       set(updates);
     } catch (e) {
       console.error("[settings] hydrate failed:", e);
@@ -240,5 +257,23 @@ export const useSettings = create<SettingsState>()((set, get) => ({
     set({ replaySeconds: clamped });
     try { await dbSetSetting("replaySeconds", String(clamped)); }
     catch (e) { console.error("[settings] setReplaySeconds failed:", e); }
+  },
+
+  setHotkeyScreenshot: async (s) => {
+    set({ hotkeyScreenshot: s });
+    try { await dbSetSetting("hotkeyScreenshot", s); }
+    catch (e) { console.error("[settings] setHotkeyScreenshot failed:", e); }
+  },
+
+  setHotkeyRecord: async (s) => {
+    set({ hotkeyRecord: s });
+    try { await dbSetSetting("hotkeyRecord", s); }
+    catch (e) { console.error("[settings] setHotkeyRecord failed:", e); }
+  },
+
+  setHotkeyReplay: async (s) => {
+    set({ hotkeyReplay: s });
+    try { await dbSetSetting("hotkeyReplay", s); }
+    catch (e) { console.error("[settings] setHotkeyReplay failed:", e); }
   },
 }));
